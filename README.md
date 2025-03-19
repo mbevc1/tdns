@@ -1,4 +1,6 @@
-# TDNS CLI
+[![Build](https://github.com/mbevc1/tdns/actions/workflows/build.yaml/badge.svg)](https://github.com/mbevc1/tdns/actions/workflows/build.yaml)
+
+# tdns CLI
 
 A powerful, lightweight CLI to manage Technitium DNS server via an HTTP API.
 
