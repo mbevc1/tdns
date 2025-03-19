@@ -16,9 +16,10 @@ var importFile string
 var importJSON bool
 
 var importCmd = &cobra.Command{
-	Use:   "import [zone]",
-	Short: "Import a DNS zone",
-	Args:  cobra.ExactArgs(1),
+	Use:     "import [zone]",
+	Aliases: []string{"im"},
+	Short:   "Import a DNS zone",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")

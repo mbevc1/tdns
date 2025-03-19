@@ -22,13 +22,15 @@ var getJSON bool
 var backupOutputPath string
 
 var settingsCmd = &cobra.Command{
-	Use:   "settings",
-	Short: "Manage server settings",
+	Use:     "settings",
+	Aliases: []string{"se"},
+	Short:   "Manage server settings",
 }
 
 var settingsBackupCmd = &cobra.Command{
-	Use:   "backup",
-	Short: "Download a backup zip file of selected server settings",
+	Use:     "backup",
+	Aliases: []string{"ba"},
+	Short:   "Download a backup zip file of selected server settings",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -84,8 +86,9 @@ func init() {
 var restoreInputPath string
 
 var settingsRestoreCmd = &cobra.Command{
-	Use:   "restore",
-	Short: "Restore server settings from a backup zip file",
+	Use:     "restore",
+	Aliases: []string{"re"},
+	Short:   "Restore server settings from a backup zip file",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -196,8 +199,9 @@ var settingsRestoreCmd = &cobra.Command{
 }
 
 var settingsGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Retrieve current server settings",
+	Use:     "get",
+	Aliases: []string{"ge"},
+	Short:   "Retrieve current server settings",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")

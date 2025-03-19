@@ -15,8 +15,9 @@ import (
 var listJSON bool
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all DNS zones",
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "List all DNS zones",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")

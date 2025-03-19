@@ -16,9 +16,10 @@ var exportOutputDir string
 var exportJSON bool
 
 var exportCmd = &cobra.Command{
-	Use:   "export [zones...]",
-	Short: "Export one or more DNS zones",
-	Args:  cobra.MinimumNArgs(1),
+	Use:     "export [zones...]",
+	Aliases: []string{"ex"},
+	Short:   "Export one or more DNS zones",
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
