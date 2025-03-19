@@ -12,6 +12,11 @@ issue/PR!
 > [!NOTE]
 Full list of API docs and spec is available [here](https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md).
 
+
+> [!IMPORTANT]
+Because this is the initial (v0) iteration of the CLI, some features maight
+change and the code quality will improve over time (e.g. tests, re-use, ...).
+
 ## Installing
 
 1. Download from the [releases](https://github.com/mbevc1/tdns/releases)
