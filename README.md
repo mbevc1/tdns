@@ -4,6 +4,14 @@
 
 A powerful, lightweight CLI to manage Technitium DNS server via an HTTP API.
 
+> [!WARNING]
+`tnds` is not supporting full set of API calls and only ones I initially
+needed. But contributions are welcome and feel free to check the guide or
+open na issue/PR!
+
+> [!NOTE]
+Full list of API docs and spec is available [here](https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md).
+
 ## Installing
 
 1. Download from the [releases](https://github.com/mbevc1/tdns/releases)
@@ -27,11 +35,12 @@ Or manually create `config.json` or `~/.tdns/config.json`:
 }
 ```
 
+> [!TIP]
 You can also use:
 - `--token` (`-t`) and `--endpoint` (`-e`) flags
 - Environment variable: `TDNS_API_TOKEN`
 
-## 💡 Commands
+## 💡 Useful commands
 
 ### Zones
 
@@ -73,7 +82,10 @@ If you want to build your own binarly locally, you can do that by running:
 make build
 ```
 
-Which should produce a locally binary to run. You'll need Golang compiler.
+Which should produce a locally binary to run.
+
+> [!NOTE]
+You'll need Golang compiler and Make.
 
 To run tests there is a Makefile target for that as well:
 
