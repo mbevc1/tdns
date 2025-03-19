@@ -2,7 +2,7 @@
 
 # tdns CLI
 
-A powerful, lightweight CLI to manage Technitium DNS server via an HTTP API.
+A powerful, lightweight CLI to manage Technitium DNS server via HTTP API endpoint.
 
 > [!WARNING]
 `tnds` is not supporting full set of API calls yet and only the ones I initially
