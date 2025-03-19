@@ -1,0 +1,46 @@
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch: {}
+
+env:
+  GOTELEMETRY: off
+  CGO_ENABLED: 0
+
+name: Build
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        #go-version: 'stable'
+        go-version-file: 'go.mod'
+        check-latest: true
+      id: go
+
+    - name: Lint
+      run: |
+        #go mod tidy
+        make fmt
+        make vet
+        #go get -u golang.org/x/lint/golint
+        #make lint
+      if: success()
+
+    - name: Test
+      run: make test
+      if: success()
+
+    - name: Build
+      #run: go build -mod vendor ./...
+      run: make build
+      if: success()

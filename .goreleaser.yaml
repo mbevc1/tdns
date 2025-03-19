@@ -1,0 +1,75 @@
+version: 2
+project_name: tdns
+
+source:
+  enabled: false
+
+env:
+  #- GO111MODULE=on
+  #- GOPROXY=https://gocenter.io
+
+#before:
+#  hooks:
+#    - go mod tidy
+#    - go mod vendor
+#    #- go mod download
+
+builds:
+  - binary: tdns
+    #main: ./main.go
+    #goos:
+    #  - linux
+    #  - darwin
+    #  - windows
+    #goarch:
+    #  - amd64
+    targets:
+      - linux_amd64
+      - windows_amd64
+      - darwin_amd64
+      - darwin_arm64
+    env:
+      - CGO_ENABLED=0
+      - GOTELEMETRY="off"
+    flags:
+      - -v
+    #ldflags: -X github.com/mbevc1/tdns/main.Version={{.Env.VERSION}}
+
+upx:
+  - enabled: true
+
+archives:
+  - id: tdns
+    #builds:
+    #  - tdns|default
+    #format: zip
+    #name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+    #replacements:
+    #  darwin: Darwin
+    #  linux: Linux
+    #  windows: Windows
+    #format: tar.gz
+    #format_overrides:
+    #  - goos: windows
+    #    format: zip
+    files:
+      - none*
+
+universal_binaries:
+ - replace: true
+
+release:
+  prerelease: auto
+  draft: false
+  disable: false
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_sha256_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  use: git # github(-native)
+  sort: asc
