@@ -16,9 +16,10 @@ var recordType string
 var jsonOutput bool
 
 var recordsCmd = &cobra.Command{
-	Use:   "get-records [zone]",
-	Short: "List all DNS records for a zone",
-	Args:  cobra.ExactArgs(1),
+	Use:     "get-records [zone]",
+	Aliases: []string{"gr"},
+	Short:   "List all DNS records for a zone",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")

@@ -15,13 +15,15 @@ import (
 var outputPath string
 
 var logsCmd = &cobra.Command{
-	Use:   "logs",
-	Short: "Interact with logs from the DNS system",
+	Use:     "logs",
+	Aliases: []string{"lo"},
+	Short:   "Interact with logs from the DNS system",
 }
 
 var logsListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List available log files",
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "List available log files",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -68,9 +70,10 @@ var logsListCmd = &cobra.Command{
 }
 
 var logsDownloadCmd = &cobra.Command{
-	Use:   "download [fileName]",
-	Short: "Download a specific log file",
-	Args:  cobra.ExactArgs(1),
+	Use:     "download [fileName]",
+	Aliases: []string{"dl"},
+	Short:   "Download a specific log file",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -110,9 +113,10 @@ var logsDownloadCmd = &cobra.Command{
 }
 
 var logsDeleteCmd = &cobra.Command{
-	Use:   "delete [fileName]",
-	Short: "Delete a specific log file",
-	Args:  cobra.ExactArgs(1),
+	Use:     "delete [fileName]",
+	Aliases: []string{"de", "rm"},
+	Short:   "Delete a specific log file",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -146,8 +150,9 @@ var logsDeleteCmd = &cobra.Command{
 }
 
 var logsDeleteAllCmd = &cobra.Command{
-	Use:   "deleteAll",
-	Short: "Delete all log files",
+	Use:     "deleteAll",
+	Aliases: []string{"da"},
+	Short:   "Delete all log files",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")

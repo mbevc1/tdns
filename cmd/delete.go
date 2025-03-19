@@ -11,9 +11,10 @@ import (
 )
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [zone]",
-	Short: "Delete a DNS zone",
-	Args:  cobra.ExactArgs(1),
+	Use:     "delete [zone]",
+	Aliases: []string{"de", "rm"},
+	Short:   "Delete a DNS zone",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")

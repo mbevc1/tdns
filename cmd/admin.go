@@ -13,8 +13,9 @@ import (
 )
 
 var adminCmd = &cobra.Command{
-	Use:   "admin",
-	Short: "Administrative commands",
+	Use:     "admin",
+	Aliases: []string{"ad"},
+	Short:   "Administrative commands",
 }
 
 var sessionID string
@@ -24,6 +25,7 @@ var getUser string
 
 var listSessionsCmd = &cobra.Command{
 	Use:         "list-sessions",
+	Aliases:     []string{"ls"},
 	Short:       "List active sessions",
 	Annotations: map[string]string{"group": "Session Management"},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -93,6 +95,7 @@ var listSessionsCmd = &cobra.Command{
 
 var deleteSessionCmd = &cobra.Command{
 	Use:         "delete-session",
+	Aliases:     []string{"ds"},
 	Short:       "Delete a session using its partial token",
 	Annotations: map[string]string{"group": "Session Management"},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -142,6 +145,7 @@ var deleteSessionCmd = &cobra.Command{
 
 var createTokenCmd = &cobra.Command{
 	Use:         "create-token",
+	Aliases:     []string{"ct"},
 	Short:       "Create a new API token for a user",
 	Annotations: map[string]string{"group": "Session Management"},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -186,8 +190,9 @@ var createTokenCmd = &cobra.Command{
 }
 
 var adminListUsersCmd = &cobra.Command{
-	Use:   "list-users",
-	Short: "List all system users",
+	Use:     "list-users",
+	Aliases: []string{"lu"},
+	Short:   "List all system users",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -246,8 +251,9 @@ var adminListUsersCmd = &cobra.Command{
 }
 
 var adminGetUserCmd = &cobra.Command{
-	Use:   "get-user",
-	Short: "Get details for a specific user",
+	Use:     "get-user",
+	Aliases: []string{"gu"},
+	Short:   "Get details for a specific user",
 	Run: func(cmd *cobra.Command, args []string) {
 		if getUser == "" {
 			fmt.Fprintln(os.Stderr, "❌ --user is required")
