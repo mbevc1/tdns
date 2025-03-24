@@ -103,6 +103,7 @@ var recordsCmd = &cobra.Command{
 }
 
 var (
+	overwrite  bool
 	zoneName   string
 	recordTTL  int
 	rTTL       string
@@ -131,6 +132,7 @@ var recordsAddCmd = &cobra.Command{
 
 		url := fmt.Sprintf("%s/api/zones/records/add?token=%s&domain=%s&zone=%s&type=%s%s",
 			host, token, domainName, zoneName, recordType, rTTL)
+		url += fmt.Sprintf("&overwrite=%t", overwrite)
 
 		if ipAddress != "" {
 			url += fmt.Sprintf("&ipAddress=%s", ipAddress)
@@ -171,6 +173,7 @@ var recordsAddCmd = &cobra.Command{
 
 func init() {
 	recordsAddCmd.Flags().StringVarP(&zoneName, "zone", "z", "", "Zone name")
+	recordsAddCmd.Flags().BoolVarP(&overwrite, "overwrite", "o", false, "Overwrite existing record if present")
 	recordsAddCmd.Flags().StringVarP(&domainName, "domain", "n", "", "Domain name")
 	recordsAddCmd.Flags().StringVarP(&recordType, "type", "r", "", "Record type")
 	recordsAddCmd.Flags().IntVarP(&recordTTL, "ttl", "", -1, "Time to live")
