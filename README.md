@@ -6,12 +6,11 @@ A powerful, lightweight CLI to manage Technitium DNS server via HTTP API endpoin
 
 > [!WARNING]
 `tnds` is not supporting full set of API calls yet and only the ones I initially
-needed :) Contributions are welcome and feel free to check the guide or open an
-issue/PR!
+needed :smile: Contributions are welcome and feel free to check the upstream
+guide or open an issue/PR!
 
 > [!NOTE]
 Full list of API docs and spec is available [here](https://github.com/TechnitiumSoftware/DnsServer/blob/master/APIDOCS.md).
-
 
 > [!IMPORTANT]
 Because this is the initial (v0) iteration of the CLI, some features maight
