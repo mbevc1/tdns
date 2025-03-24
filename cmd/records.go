@@ -82,7 +82,7 @@ var recordsGetCmd = &cobra.Command{
 			name := rec["name"]
 			ttl := rec["ttl"]
 			recordValue := "None"
-			if rVal, ok := rec["record"]; ok && rVal != nil {
+			if rVal, ok := rec["rData"]; ok && rVal != nil {
 				recordValue = fmt.Sprintf("%v", rVal)
 			}
 
@@ -102,7 +102,82 @@ var recordsCmd = &cobra.Command{
 	Short:   "Manage zone records",
 }
 
+var (
+	zoneName   string
+	recordTTL  int
+	rTTL       string
+	ipAddress  string
+	cnameValue string
+	domainName string
+)
+
+var recordsAddCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Add a new record to a zone",
+	Run: func(cmd *cobra.Command, args []string) {
+		token := viper.GetString("token")
+		host := viper.GetString("host")
+
+		if zoneName == "" || recordType == "" {
+			fmt.Fprintln(os.Stderr, "❌ --zone and --type are required")
+			os.Exit(1)
+		}
+
+		if recordTTL < 0 {
+			rTTL = ""
+		} else {
+			rTTL = fmt.Sprintf("&ttl=%d", recordTTL)
+		}
+
+		url := fmt.Sprintf("%s/api/zones/records/add?token=%s&domain=%s&zone=%s&type=%s%s",
+			host, token, domainName, zoneName, recordType, rTTL)
+
+		if ipAddress != "" {
+			url += fmt.Sprintf("&ipAddress=%s", ipAddress)
+		}
+		if cnameValue != "" {
+			url += fmt.Sprintf("&cname=%s", cnameValue)
+		}
+
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			os.Exit(1)
+		}
+
+		if status, ok := result["status"].(string); !ok || status != "ok" {
+			if msg, ok := result["errorMessage"].(string); ok {
+				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
+			} else {
+				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
+			}
+			os.Exit(1)
+		}
+
+		if jsonOutput {
+			raw, _ := json.MarshalIndent(result["response"], "", "  ")
+			fmt.Println(string(raw))
+			return
+		}
+	},
+}
+
 func init() {
+	recordsAddCmd.Flags().StringVarP(&zoneName, "zone", "z", "", "Zone name")
+	recordsAddCmd.Flags().StringVarP(&domainName, "domain", "n", "", "Domain name")
+	recordsAddCmd.Flags().StringVarP(&recordType, "type", "r", "", "Record type")
+	recordsAddCmd.Flags().IntVarP(&recordTTL, "ttl", "", -1, "Time to live")
+	recordsAddCmd.Flags().StringVar(&ipAddress, "ipAddress", "", "IP address for A/AAAA records")
+	recordsAddCmd.Flags().StringVar(&cnameValue, "cname", "", "CNAME target")
+	recordsAddCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output raw JSON of response")
+	recordsCmd.AddCommand(recordsAddCmd)
 	recordsGetCmd.Flags().StringVarP(&recordType, "filter", "f", "", "Filter by record type (e.g. A, MX, TXT)")
 	recordsGetCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output raw JSON instead of formatted text")
 	recordsCmd.AddCommand(recordsGetCmd)
