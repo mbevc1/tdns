@@ -15,9 +15,9 @@ import (
 var recordType string
 var jsonOutput bool
 
-var recordsCmd = &cobra.Command{
-	Use:     "get-records [zone]",
-	Aliases: []string{"gr"},
+var recordsGetCmd = &cobra.Command{
+	Use:     "get [zone]",
+	Aliases: []string{"ge"},
 	Short:   "List all DNS records for a zone",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -96,8 +96,15 @@ var recordsCmd = &cobra.Command{
 	},
 }
 
+var recordsCmd = &cobra.Command{
+	Use:     "records",
+	Aliases: []string{"re"},
+	Short:   "Manage zone records",
+}
+
 func init() {
-	recordsCmd.Flags().StringVarP(&recordType, "filter", "f", "", "Filter by record type (e.g. A, MX, TXT)")
-	recordsCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output raw JSON instead of formatted text")
+	recordsGetCmd.Flags().StringVarP(&recordType, "filter", "f", "", "Filter by record type (e.g. A, MX, TXT)")
+	recordsGetCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output raw JSON instead of formatted text")
+	recordsCmd.AddCommand(recordsGetCmd)
 	rootCmd.AddCommand(recordsCmd)
 }
