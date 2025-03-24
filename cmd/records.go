@@ -12,9 +12,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var recordType string
-var jsonOutput bool
-
 var recordsGetCmd = &cobra.Command{
 	Use:     "get [zone]",
 	Aliases: []string{"ge"},
@@ -103,7 +100,10 @@ var recordsCmd = &cobra.Command{
 }
 
 var (
+	recordType string
+	jsonOutput bool
 	overwrite  bool
+	assumeYes  bool
 	zoneName   string
 	recordTTL  int
 	rTTL       string
@@ -113,8 +113,9 @@ var (
 )
 
 var recordsAddCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Add a new record to a zone",
+	Use:     "add",
+	Aliases: []string{"a"},
+	Short:   "Add a new record to a zone",
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
@@ -171,7 +172,80 @@ var recordsAddCmd = &cobra.Command{
 	},
 }
 
+var recordsDeleteCmd = &cobra.Command{
+	Use:     "delete",
+	Aliases: []string{"d", "del"},
+	Short:   "Delete a record from a zone",
+	Run: func(cmd *cobra.Command, args []string) {
+		token := viper.GetString("token")
+		host := viper.GetString("host")
+
+		if zoneName == "" || recordType == "" {
+			fmt.Fprintln(os.Stderr, "❌ --zone and--type are required")
+			os.Exit(1)
+		}
+
+		if recordTTL < 0 {
+			rTTL = ""
+		} else {
+			rTTL = fmt.Sprintf("&ttl=%d", recordTTL)
+		}
+
+		url := fmt.Sprintf("%s/api/zones/records/delete?token=%s&domain=%s&zone=%s&type=%s%s",
+			host, token, domainName, zoneName, recordType, rTTL)
+
+		if ipAddress != "" {
+			url += fmt.Sprintf("&ipAddress=%s", ipAddress)
+		}
+		if cnameValue != "" {
+			url += fmt.Sprintf("&cname=%s", cnameValue)
+		}
+
+		if !assumeYes {
+			fmt.Printf("Are you sure you want to delete this record (%s)? (yes/no): ", domainName)
+			var confirm string
+			fmt.Scanln(&confirm)
+			if confirm != "yes" {
+				fmt.Println("❌ Aborted.")
+				return
+			}
+		}
+
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			os.Exit(1)
+		}
+
+		if status, ok := result["status"].(string); !ok || status != "ok" {
+			if msg, ok := result["errorMessage"].(string); ok {
+				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
+			} else {
+				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
+			}
+			os.Exit(1)
+		}
+
+		fmt.Println("✅ Record deleted successfully.")
+	},
+}
+
 func init() {
+	recordsDeleteCmd.Flags().StringVarP(&zoneName, "zone", "z", "", "Zone name")
+	recordsDeleteCmd.Flags().BoolVarP(&assumeYes, "yes", "y", false, "Assume yes when asking for confirmation")
+	recordsDeleteCmd.Flags().StringVarP(&domainName, "domain", "n", "", "Domain name")
+	recordsDeleteCmd.Flags().StringVarP(&recordType, "type", "r", "", "Record type")
+	recordsDeleteCmd.Flags().IntVarP(&recordTTL, "ttl", "", -1, "Time to live")
+	recordsDeleteCmd.Flags().StringVar(&ipAddress, "ipAddress", "", "IP address for A/AAAA records")
+	recordsDeleteCmd.Flags().StringVar(&cnameValue, "cname", "", "CNAME target")
+	recordsCmd.AddCommand(recordsDeleteCmd)
 	recordsAddCmd.Flags().StringVarP(&zoneName, "zone", "z", "", "Zone name")
 	recordsAddCmd.Flags().BoolVarP(&overwrite, "overwrite", "o", false, "Overwrite existing record if present")
 	recordsAddCmd.Flags().StringVarP(&domainName, "domain", "n", "", "Domain name")
