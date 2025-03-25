@@ -1,1 +1,1 @@
-localhost   IN  A   127.0.0.1
+b   IN  A   127.0.0.3
