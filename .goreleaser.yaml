@@ -71,9 +71,21 @@ checksum:
   algorithm: sha256
 
 changelog:
-  #use: git # github(-native)
+  use: github #git # github(-native)
   sort: asc
+  # Disabled when using 'github-native'.
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?(fix|bug)(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
   filters:
     exclude:
     - '^docs:'
     - '^test:'
+    - '^Merge pull request'
+    - typo
