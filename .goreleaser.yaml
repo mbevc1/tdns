@@ -65,6 +65,12 @@ release:
   prerelease: auto
   draft: false
   disable: false
+  name_template: "v{{ .Version }}"
+  footer: |
+    **Full Changelog**: https://github.com/mbevc1/tdns/compare/{{ .PreviousTag }}...{{ if .IsNightly }}nightly{{ else }}{{ .Tag }}{{ end }}
+
+milestones:
+  - close: true
 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_sha256_checksums.txt"
@@ -73,19 +79,42 @@ checksum:
 changelog:
   use: github #git # github(-native)
   sort: asc
+  format: "{{ .SHA }}: {{ .Message }}{{ with .AuthorUsername }} (@{{ . }}){{ end }}"
   # Disabled when using 'github-native'.
   groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
+    - title: "New Features"
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      #regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 100
+    - title: "Security updates"
+      regexp: '^.*?sec(\(.+\))??!?:.+$'
+      order: 150
     - title: "Bug fixes"
-      regexp: '^.*?(fix|bug)(\([[:word:]]+\))??!?:.+$'
-      order: 1
-    - title: Others
-      order: 999
+      regexp: '^.*?(fix|refactor|bug)(\(.+\))??!?:.+$'
+     # regexp: '^.*?(fix|bug)(\([[:word:]]+\))??!?:.+$'
+      order: 200
+    - title: "Documentation updates"
+      regexp: ^.*?docs?(\(.+\))??!?:.+$
+      order: 400
+    - title: Other work
+      order: 9999
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
-    - '^Merge pull request'
-    - typo
+      - "^test:"
+      - "^test\\("
+      - "^chore: update$"
+      - "^chore: docs$"
+      - "^docs: update$"
+      - "^chore: schema$"
+      - "^chore: typo$"
+      - "^chore: auto-update generated files$"
+      - "^chore: update schema$"
+      - "^chore: schema update$"
+      - "^chore\\(deps\\): "
+      - "^(build|ci): "
+      - "merge conflict"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - typo
