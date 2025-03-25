@@ -71,5 +71,9 @@ checksum:
   algorithm: sha256
 
 changelog:
-  use: git # github(-native)
+  #use: git # github(-native)
   sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
