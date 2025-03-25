@@ -7,9 +7,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+var (
+	recordType string
+	jsonOutput bool
+	overwrite  bool
+	assumeYes  bool
+	zoneName   string
+	recordTTL  int
+	rTTL       string
+	ipAddress  string
+	cnameValue string
+	domainName string
 )
 
 var recordsGetCmd = &cobra.Command{
@@ -64,10 +76,6 @@ var recordsGetCmd = &cobra.Command{
 			return
 		}
 
-		bold := color.New(color.Bold).SprintFunc()
-		cyan := color.New(color.FgCyan).SprintFunc()
-		green := color.New(color.FgGreen).SprintFunc()
-
 		fmt.Printf("%s %s\n\n", bold("Records for zone:"), cyan(zone))
 		for _, r := range records {
 			rec := r.(map[string]interface{})
@@ -80,11 +88,12 @@ var recordsGetCmd = &cobra.Command{
 			ttl := rec["ttl"]
 			recordValue := "None"
 			if rVal, ok := rec["rData"]; ok && rVal != nil {
-				recordValue = fmt.Sprintf("%v", rVal)
+				//recordValue = fmt.Sprintf("%v", rVal)
+				recordValue = fmt.Sprintf("%s", FormatMap(rVal))
 			}
 
-			fmt.Printf("%s  %s  %v  %s\n",
-				green(name),
+			fmt.Printf("%s  %s  %g  %s\n",
+				greenL(name),
 				rtype,
 				ttl,
 				recordValue,
@@ -98,19 +107,6 @@ var recordsCmd = &cobra.Command{
 	Aliases: []string{"re"},
 	Short:   "Manage zone records",
 }
-
-var (
-	recordType string
-	jsonOutput bool
-	overwrite  bool
-	assumeYes  bool
-	zoneName   string
-	recordTTL  int
-	rTTL       string
-	ipAddress  string
-	cnameValue string
-	domainName string
-)
 
 var recordsAddCmd = &cobra.Command{
 	Use:     "add",
