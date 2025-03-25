@@ -58,7 +58,7 @@ tdns delete <zone>
 ### Records
 
 ```bash
-tdns get-records <zone> [--filter A] [--json]
+tdns records get <zone> [--filter A] [--json]
 ```
 
 ### Logs
