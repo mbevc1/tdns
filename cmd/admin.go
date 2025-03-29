@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/term"
 )
 
 var adminCmd = &cobra.Command{
@@ -22,6 +23,8 @@ var sessionID string
 var createTokenUser string
 var createTokenName string
 var getUser string
+var newPassword string
+var interactive bool
 
 var listSessionsCmd = &cobra.Command{
 	Use:         "list-sessions",
@@ -366,7 +369,75 @@ var adminCheckUpdateCmd = &cobra.Command{
 	},
 }
 
+var adminChangePasswordCmd = &cobra.Command{
+	Use:     "change-password",
+	Aliases: []string{"cp"},
+	Short:   "Change the current user's password",
+	Run: func(cmd *cobra.Command, args []string) {
+		token := viper.GetString("token")
+		host := viper.GetString("host")
+
+		// Interactive mode
+		if newPassword == "" && interactive {
+			fmt.Print("Enter new password: ")
+			bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
+			fmt.Println()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Failed to read password: %v\n", err)
+				os.Exit(1)
+			}
+
+			fmt.Print("Confirm new password: ")
+			byteConfirm, _ := term.ReadPassword(int(os.Stdin.Fd()))
+			fmt.Println()
+			if string(byteConfirm) != string(bytePassword) {
+				fmt.Fprintln(os.Stderr, "❌ Passwords do not match")
+				os.Exit(1)
+			}
+
+			newPassword = string(bytePassword)
+		}
+
+		// Get as parameter (unsecure)
+		if newPassword == "" {
+			fmt.Fprintln(os.Stderr, "❌ --pass is required")
+			os.Exit(1)
+		}
+
+		url := fmt.Sprintf("%s/api/user/changePassword?token=%s&pass=%s", host, token, newPassword)
+
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			os.Exit(1)
+		}
+
+		if status, ok := result["status"].(string); !ok || status != "ok" {
+			if msg, ok := result["errorMessage"].(string); ok {
+				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
+			} else {
+				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
+			}
+			os.Exit(1)
+		}
+
+		fmt.Println("✅ Password changed successfully.")
+	},
+}
+
 func init() {
+	adminChangePasswordCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "Prompt for password interactively")
+	adminChangePasswordCmd.Flags().StringVarP(&newPassword, "pass", "p", "", "New password (insecure)")
+	adminCmd.AddCommand(adminChangePasswordCmd)
+	adminCmd.AddCommand(adminCheckUpdateCmd)
+
 	adminCmd.AddCommand(adminCheckUpdateCmd)
 	adminGetUserCmd.Flags().StringVarP(&getUser, "user", "u", "", "User to query")
 	adminCmd.AddCommand(adminGetUserCmd)
