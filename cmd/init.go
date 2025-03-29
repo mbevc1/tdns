@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -11,37 +11,40 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Create a config.json file from config-example.json",
+	Short: "Create an initial config.json file in the current directory",
 	Run: func(cmd *cobra.Command, args []string) {
-		src := "config-example.json"
-		dst := "config.json"
+		configFile := "config.json"
 
-		if _, err := os.Stat(dst); err == nil {
-			fmt.Println("⚠️  config.json already exists.")
+		// Define the structure of the data
+		data := map[string]string{
+			"token": "",
+			"host":  "http://localhost:5380",
+		}
+
+		// Check if file exists
+		if _, err := os.Stat(configFile); err == nil {
+			fmt.Printf("⚠️  file %s already exists!\n", configFile)
 			return
 		}
 
-		srcFile, err := os.Open(src)
+		// Create the JSON file
+		file, err := os.Create(configFile)
 		if err != nil {
-			fmt.Printf("❌ Failed to read %s: %v\n", src, err)
+			fmt.Println("❌ Error creating file:", err)
 			return
 		}
-		defer srcFile.Close()
+		defer file.Close()
 
-		dstFile, err := os.Create(dst)
-		if err != nil {
-			fmt.Printf("❌ Failed to create %s: %v\n", dst, err)
-			return
-		}
-		defer dstFile.Close()
-
-		if _, err := io.Copy(dstFile, srcFile); err != nil {
-			fmt.Printf("❌ Failed to copy: %v\n", err)
+		// Encode the data as JSON and write it to the file
+		encoder := json.NewEncoder(file)
+		encoder.SetIndent("", "  ") // Pretty print
+		if err := encoder.Encode(data); err != nil {
+			fmt.Println("❌ Error encoding JSON:", err)
 			return
 		}
 
-		absPath, _ := filepath.Abs(dst)
-		fmt.Printf("✅ Created config file at %s\n", absPath)
+		absPath, _ := filepath.Abs(configFile)
+		fmt.Printf("✅ Successfully created config file at %s\n", absPath)
 	},
 }
 
