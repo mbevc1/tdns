@@ -88,10 +88,10 @@ If you want to build your own binarly locally, you can do that by running:
 make build
 ```
 
-Which should produce a locally binary to run.
+Which should produce a locally executable binary.
 
 > [!NOTE]
-You'll need Golang compiler and Make.
+You'll need Golang 1.x compiler and Make.
 
 To run tests there is a Makefile target for that as well:
 
