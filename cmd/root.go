@@ -76,6 +76,6 @@ func init() {
 
 func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Fprintf(os.Stderr, "Config not loaded: %v\n", err)
+		fmt.Fprintf(os.Stderr, "⚠️  Warning: config not found/loaded: %v\n", err)
 	}
 }
