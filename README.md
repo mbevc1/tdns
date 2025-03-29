@@ -30,6 +30,8 @@ Generate a config file with:
 tdns init
 ```
 
+and update the values for your endpoint!
+
 Or manually create `config.json` or `~/.tdns/config.json`:
 
 ```json
