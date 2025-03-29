@@ -78,6 +78,7 @@ tdns logs deleteAll
 tdns admin list-sessions
 tdns admin delete-session --id <partialToken>
 tdns admin create-token --user admin --token-name mytoken
+tdns admin check-update
 ```
 
 ## Building and 🧪 Dev

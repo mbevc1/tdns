@@ -315,7 +315,59 @@ var adminGetUserCmd = &cobra.Command{
 	},
 }
 
+var adminCheckUpdateCmd = &cobra.Command{
+	Use:     "check-update",
+	Aliases: []string{"cu"},
+	Short:   "Check for available updates",
+	Run: func(cmd *cobra.Command, args []string) {
+		token := viper.GetString("token")
+		host := viper.GetString("host")
+
+		url := fmt.Sprintf("%s/api/user/checkForUpdate?token=%s", host, token)
+		resp, err := http.Get(url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+
+		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			os.Exit(1)
+		}
+
+		if status, ok := result["status"].(string); !ok || status != "ok" {
+			if msg, ok := result["errorMessage"].(string); ok {
+				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
+			} else {
+				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
+			}
+			os.Exit(1)
+		}
+
+		respData := result["response"].(map[string]interface{})
+		bold := color.New(color.Bold).SprintFunc()
+		green := color.New(color.FgGreen).SprintFunc()
+		red := color.New(color.FgRed).SprintFunc()
+		cyan := color.New(color.FgCyan).SprintFunc()
+
+		fmt.Printf("%s: %s -> %s\n", bold("Version"), cyan(respData["currentVersion"]), green(respData["updateVersion"]))
+
+		if respData["updateAvailable"].(bool) {
+			fmt.Printf("⚠️  %s", bold(red(respData["updateTitle"])))
+			fmt.Printf("%s\n\n", respData["updateMessage"])
+			fmt.Printf("Download: %s\n", cyan(respData["downloadLink"]))
+			fmt.Printf("Instructions: %s\n", cyan(respData["instructionsLink"]))
+			fmt.Printf("Changelog: %s\n", cyan(respData["changeLogLink"]))
+		} else {
+			fmt.Println(green("✅ You are using the latest version."))
+		}
+	},
+}
+
 func init() {
+	adminCmd.AddCommand(adminCheckUpdateCmd)
 	adminGetUserCmd.Flags().StringVarP(&getUser, "user", "u", "", "User to query")
 	adminCmd.AddCommand(adminGetUserCmd)
 
