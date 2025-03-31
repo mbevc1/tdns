@@ -72,6 +72,7 @@ func init() {
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME/.tdns")
+	viper.AddConfigPath("/etc/tdns/")
 }
 
 func initConfig() {
