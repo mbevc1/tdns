@@ -364,7 +364,7 @@ var adminCheckUpdateCmd = &cobra.Command{
 			fmt.Printf("Instructions: %s\n", cyan(respData["instructionsLink"]))
 			fmt.Printf("Changelog: %s\n", cyan(respData["changeLogLink"]))
 		} else {
-			fmt.Println(green("✅ You are using the latest version."))
+			fmt.Println("✅ You are using the latest version.")
 		}
 	},
 }
