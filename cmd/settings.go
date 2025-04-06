@@ -141,14 +141,15 @@ var settingsRestoreCmd = &cobra.Command{
 		}
 
 		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			os.Exit(1)
+		}
+
 		if getJSON {
 			raw, _ := json.MarshalIndent(result, "", "  ")
 			fmt.Println(string(raw))
 			return
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
-			os.Exit(1)
 		}
 
 		status, ok := result["status"].(string)
