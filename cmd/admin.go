@@ -25,6 +25,7 @@ var createTokenName string
 var getUser string
 var newPassword string
 var interactive bool
+var JSON bool
 
 var listSessionsCmd = &cobra.Command{
 	Use:         "list-sessions",
@@ -340,6 +341,12 @@ var adminCheckUpdateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if JSON {
+			raw, _ := json.MarshalIndent(result, "", "  ")
+			fmt.Println(string(raw))
+			return
+		}
+
 		if status, ok := result["status"].(string); !ok || status != "ok" {
 			if msg, ok := result["errorMessage"].(string); ok {
 				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
@@ -358,7 +365,7 @@ var adminCheckUpdateCmd = &cobra.Command{
 		fmt.Printf("%s: %s -> %s\n", bold("Version"), cyan(respData["currentVersion"]), green(respData["updateVersion"]))
 
 		if respData["updateAvailable"].(bool) {
-			fmt.Printf("⚠️  %s", bold(red(respData["updateTitle"])))
+			fmt.Printf("⚠️  %s\n", bold(red(respData["updateTitle"])))
 			fmt.Printf("%s\n\n", respData["updateMessage"])
 			fmt.Printf("Download: %s\n", cyan(respData["downloadLink"]))
 			fmt.Printf("Instructions: %s\n", cyan(respData["instructionsLink"]))
@@ -437,8 +444,8 @@ func init() {
 	adminChangePasswordCmd.Flags().StringVarP(&newPassword, "pass", "p", "", "New password (insecure)")
 	adminCmd.AddCommand(adminChangePasswordCmd)
 	adminCmd.AddCommand(adminCheckUpdateCmd)
+	adminCheckUpdateCmd.Flags().BoolVar(&JSON, "json", false, "Output raw JSON response")
 
-	adminCmd.AddCommand(adminCheckUpdateCmd)
 	adminGetUserCmd.Flags().StringVarP(&getUser, "user", "u", "", "User to query")
 	adminCmd.AddCommand(adminGetUserCmd)
 
