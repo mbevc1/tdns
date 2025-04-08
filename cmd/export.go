@@ -13,7 +13,6 @@ import (
 )
 
 var exportOutputDir string
-var exportJSON bool
 
 var exportCmd = &cobra.Command{
 	Use:     "export [zones...]",
@@ -59,12 +58,8 @@ var exportCmd = &cobra.Command{
 				}
 				fmt.Printf("✅ Zone '%s' exported to %s\n", zone, outPath)
 			} else {
-				if exportJSON {
-					fmt.Println(string(body))
-				} else {
-					fmt.Printf("Zone: %s\n", zone)
-					fmt.Println(string(body))
-				}
+				fmt.Printf("-----\n"+bold("Zone:")+" %s\n-----\n", blue(zone))
+				fmt.Println(string(body))
 			}
 		}
 	},
@@ -72,6 +67,5 @@ var exportCmd = &cobra.Command{
 
 func init() {
 	exportCmd.Flags().StringVarP(&exportOutputDir, "output-dir", "o", "", "Directory to save exported zone files")
-	exportCmd.Flags().BoolVar(&exportJSON, "json", false, "Print raw JSON output instead of zone file text")
 	rootCmd.AddCommand(exportCmd)
 }
