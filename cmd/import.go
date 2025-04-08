@@ -32,7 +32,7 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		url := fmt.Sprintf("%s/api/zones/import?token=%s&zone=%s", host, token, zone)
+		url := fmt.Sprintf("%s/api/zones/import?token=%s&zone=%s&overwrite=true&overwriteSoaSerial=true", host, token, zone)
 		req, err := http.NewRequest("POST", url, strings.NewReader(string(data)))
 		if err != nil {
 			fmt.Printf("Failed to create request: %v\n", err)
@@ -52,6 +52,11 @@ var importCmd = &cobra.Command{
 
 		var result map[string]interface{}
 		if err := json.Unmarshal(body, &result); err == nil {
+			if importJSON {
+				raw, _ := json.MarshalIndent(result, "", "  ")
+				fmt.Println(string(raw))
+				return
+			}
 			if status, ok := result["status"].(string); !ok || status != "ok" {
 				if msg, ok := result["errorMessage"].(string); ok {
 					fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
@@ -62,11 +67,7 @@ var importCmd = &cobra.Command{
 			}
 		}
 
-		if importJSON {
-			fmt.Println(string(body))
-		} else {
-			fmt.Printf("✅ Zone '%s' imported successfully.\n", zone)
-		}
+		fmt.Printf("✅ Zone '%s' imported successfully.\n", zone)
 	},
 }
 
