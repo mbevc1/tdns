@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/fatih/color v1.18.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
 )
