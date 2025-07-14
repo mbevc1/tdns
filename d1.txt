@@ -1,0 +1,21 @@
+$TTL 1D
+@        21600    IN    SOA    vm1.domain.com. hostmaster.domain.com. (
+                                       1387784764 ; serial
+                                       28800      ; refresh
+                                       7200       ; retry
+                                       1W         ; expire
+                                       3600 )     ; minimum
+
+                       IN    NS    ns1.domain.com.
+                       IN    NS    ns2.domain.com.
+                       TXT     "MS=msxxxxxxxx"
+       3600            TXT     "ZOOM_verify_xxxx"
+                       TXT     "v=spf1 ip4:x.x.x.x/24 24 ip6:2001:xxxx:xxxx::/64 ~all"
+                       CAA 128 issue "letsencrypt.org"
+
+               10800   IN      MX      10 mx1.something.com.
+               10800   IN      MX      10 mx2.something.com.
+
+@                       IN      A       1.1.1.1
+www2                    IN      A       2.2.2.2
+else                    IN      A       3.3.3.3

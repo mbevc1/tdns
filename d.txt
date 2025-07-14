@@ -1,0 +1,44 @@
+$TTL 1D
+;@        21600    IN    SOA    vm1.bts.si. hostmaster.bts-mb.si. (
+;                                       1387784764 ; serial
+;                                       28800      ; refresh
+;                                       7200       ; retry
+;                                       1W         ; expire
+;                                       3600 )     ; minimum
+
+                       IN    NS    vm1.bts.si.
+;                       IN    NS    dns2.arnes.si.
+;                       IN    NS    dns3.arnes.si.
+                       TXT     "MS=ms28622198"
+       3600            TXT     "ZOOM_verify_hICwcTLcScGD21Y0zLa9OQ"
+                       TXT     "v=spf1 ip4:193.2.1.0/24 ip4:193.2.0.0/24 ip6:2001:1470:8000::/64 ip6:2001:1470:80dc:2003::/64 ip4:153.5.61.0/25 ~all"
+                       CAA 128 issue "letsencrypt.org"
+
+               10800   IN      MX      10 avs1.arnes.si.
+               10800   IN      MX      10 avs2.arnes.si.
+               10800   IN      MX      10 avs3.arnes.si.
+
+
+dijak           3600    IN      MX      10 avs1.arnes.si.
+dijak           3600    IN      MX      10 avs2.arnes.si.
+dijak           3600    TXT     "v=spf1 ip4:193.2.1.0/24 ip4:193.2.0.0/24 ip6:2001:1470:8000::/64 ~all"
+
+;@              10800   IN      A       46.4.112.242
+;@                      IN      CNAME   1130.gvs.arnes.si.
+;@                      IN      A       194.249.14.124
+;808
+;@                      IN      A       194.249.2.215
+;698
+@                       IN      A       194.249.3.32
+www2                    IN      A       46.4.112.242
+nova                    IN      A       194.249.3.32
+stara                   IN      A       194.249.2.105
+gw1                     IN      A       149.62.77.1
+gw1                     IN      AAAA    2001:1470:f9a2::1
+sw1                     IN      A       149.62.77.2
+sw2                     IN      A       149.62.77.3
+sw3                     IN      A       149.62.77.4
+sw4                     IN      A       149.62.77.5
+sw5                     IN      A       149.62.77.6
+arnes-gw                IN      A       212.235.225.153
+arnes-gw                IN      AAAA    2001:1470:f9a2:ffff::1
