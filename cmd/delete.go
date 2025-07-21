@@ -11,46 +11,47 @@ import (
 )
 
 var deleteCmd = &cobra.Command{
-	Use:     "delete [zone]",
+	Use:     "delete [zone]...",
 	Aliases: []string{"de", "rm"},
-	Short:   "Delete a DNS zone",
-	Args:    cobra.ExactArgs(1),
+	Short:   "Delete DNS zone(s)",
+	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		token := viper.GetString("token")
 		host := viper.GetString("host")
 
-		zone := args[0]
-		url := fmt.Sprintf("%s/api/zones/delete?token=%s&zone=%s", host, token, zone)
-		req, err := http.NewRequest("DELETE", url, nil)
-		if err != nil {
-			fmt.Printf("Failed to create request: %v\n", err)
-			os.Exit(1)
-		}
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Printf("Delete failed for '%s': %v\n", zone, err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
+		for _, zone := range args {
+			url := fmt.Sprintf("%s/api/zones/delete?token=%s&zone=%s", host, token, zone)
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				fmt.Printf("Failed to create request: %v\n", err)
+				os.Exit(1)
 			}
-			os.Exit(1)
-		}
 
-		fmt.Printf("✅ Zone '%s' deleted successfully.\n", zone)
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				fmt.Printf("Delete failed for '%s': %v\n", zone, err)
+				os.Exit(1)
+			}
+			defer resp.Body.Close()
+
+			var result map[string]interface{}
+			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+				fmt.Printf("Invalid response: %v\n", err)
+				os.Exit(1)
+			}
+
+			if status, ok := result["status"].(string); !ok || status != "ok" {
+				if msg, ok := result["errorMessage"].(string); ok {
+					fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
+				} else {
+					fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
+				}
+				os.Exit(1)
+			}
+
+			fmt.Printf("✅ Zone '%s' deleted successfully.\n", zone)
+		}
 	},
 }
 
