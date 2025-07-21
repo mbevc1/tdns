@@ -1,0 +1,11 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: '*.md'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: 'go.*'
+
+pipelines:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
