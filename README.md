@@ -54,7 +54,8 @@ You can also use:
 tdns list [--json]
 tdns import <zone> --file zone.txt [--json]
 tdns export <zone> [--output-dir dir] [--json]
-tdns delete <zone>
+tdns create <zone>... [--type Primary]
+tdns delete <zone>...
 ```
 
 ### Records
