@@ -4,13 +4,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
+permissions:
+  contents: read  # This is required for the label PR action
+  pull-requests: write # This is required for the label PR action
+
 jobs:
   validate-pr-title:
     name: Validate PR
     runs-on: ubuntu-latest
-    permissions:
-      contents: read  # This is required for the label PR action
-      pull-requests: write # This is required for the label PR action
     steps:
       - name: PR Conventional Commit Validation
         uses: ytanikin/pr-conventional-commits@1.4.1
@@ -22,9 +23,6 @@ jobs:
   labeler:
     name: Label PRs
     runs-on: ubuntu-latest
-    permissions:
-      contents: read  # This is required for the label PR action
-      pull-requests: write # This is required for the label PR action
     steps:
       - name: Label PRs
         id: label-prs
