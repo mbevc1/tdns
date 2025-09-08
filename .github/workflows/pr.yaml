@@ -26,6 +26,6 @@ jobs:
     steps:
       - name: Label PRs
         id: label-prs
-        uses: actions/labeler@v5
+        uses: actions/labeler@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
