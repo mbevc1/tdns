@@ -1,12 +1,12 @@
 module tdns
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/fatih/color v1.18.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.20.1
-	golang.org/x/term v0.34.0
+	golang.org/x/term v0.35.0
 )
 
 require (
@@ -24,7 +24,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
