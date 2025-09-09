@@ -1,6 +1,8 @@
 module tdns
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.7
 
 require (
 	github.com/fatih/color v1.18.0
