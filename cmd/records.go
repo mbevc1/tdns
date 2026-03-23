@@ -177,7 +177,7 @@ var recordsDeleteCmd = &cobra.Command{
 		host := viper.GetString("host")
 
 		if zoneName == "" || recordType == "" {
-			fmt.Fprintln(os.Stderr, "❌ --zone and--type are required")
+			fmt.Fprintln(os.Stderr, "❌ --zone and --type are required")
 			os.Exit(1)
 		}
 
