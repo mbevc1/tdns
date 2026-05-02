@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var exportOutputDir string
@@ -20,19 +21,16 @@ var exportCmd = &cobra.Command{
 	Short:   "Export one or more DNS zones",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
+		client := api.New()
 		for _, zone := range args {
-			url := fmt.Sprintf("%s/api/zones/export?token=%s&zone=%s", host, token, zone)
-			resp, err := http.Get(url)
+			resp, err := client.Get("/api/zones/export", url.Values{"zone": {zone}})
 			if err != nil {
 				fmt.Printf("Export failed for %s: %v\n", zone, err)
 				continue
 			}
-			defer resp.Body.Close()
 
 			body, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			if err != nil {
 				fmt.Printf("Failed to read response for %s: %v\n", zone, err)
 				continue

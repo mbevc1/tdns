@@ -1,15 +1,15 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var outputPath string
@@ -25,34 +25,13 @@ var logsListCmd = &cobra.Command{
 	Aliases: []string{"ls"},
 	Short:   "List available log files",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/logs/list?token=%s", host, token)
-
-		resp, err := http.Get(url)
+		_, response, err := api.New().GetJSON("/api/logs/list", nil)
 		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
-			os.Exit(1)
-		}
-
-		logs := result["response"].(map[string]interface{})["logFiles"].([]interface{})
+		logs := response["logFiles"].([]interface{})
 		if len(logs) == 0 {
 			fmt.Println("No log files found.")
 			return
@@ -75,12 +54,9 @@ var logsDownloadCmd = &cobra.Command{
 	Short:   "Download a specific log file",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
 		fileName := args[0]
 
-		url := fmt.Sprintf("%s/api/logs/download?token=%s&fileName=%s", host, token, fileName)
-		resp, err := http.Get(url)
+		resp, err := api.New().Get("/api/logs/download", url.Values{"fileName": {fileName}})
 		if err != nil {
 			fmt.Printf("Request failed: %v\n", err)
 			os.Exit(1)
@@ -118,30 +94,10 @@ var logsDeleteCmd = &cobra.Command{
 	Short:   "Delete a specific log file",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
 		fileName := args[0]
 
-		url := fmt.Sprintf("%s/api/logs/delete?token=%s&log=%s", host, token, fileName)
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+		if _, _, err := api.New().GetJSON("/api/logs/delete", url.Values{"log": {fileName}}); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -154,9 +110,6 @@ var logsDeleteAllCmd = &cobra.Command{
 	Aliases: []string{"da"},
 	Short:   "Delete all log files",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		fmt.Print("Are you sure you want to delete ALL logs? (yes/no): ")
 		var confirm string
 		fmt.Scanln(&confirm)
@@ -165,26 +118,8 @@ var logsDeleteAllCmd = &cobra.Command{
 			return
 		}
 
-		url := fmt.Sprintf("%s/api/logs/deleteAll?token=%s", host, token)
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+		if _, _, err := api.New().GetJSON("/api/logs/deleteAll", nil); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 

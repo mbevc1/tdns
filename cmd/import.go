@@ -1,15 +1,15 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"net/url"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var importFile string
@@ -21,37 +21,28 @@ var importCmd = &cobra.Command{
 	Short:   "Import a DNS zone",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		zone := args[0]
 
-		data, err := ioutil.ReadFile(importFile)
+		data, err := os.ReadFile(importFile)
 		if err != nil {
 			fmt.Printf("Failed to read file: %v\n", err)
 			os.Exit(1)
 		}
 
-		url := fmt.Sprintf("%s/api/zones/import?token=%s&zone=%s&overwrite=true&overwriteSoaSerial=true", host, token, zone)
-		req, err := http.NewRequest("POST", url, strings.NewReader(string(data)))
-		if err != nil {
-			fmt.Printf("Failed to create request: %v\n", err)
-			os.Exit(1)
+		q := url.Values{
+			"zone":               {zone},
+			"overwrite":          {"true"},
+			"overwriteSoaSerial": {"true"},
 		}
-		req.Header.Set("Content-Type", "text/plain")
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		resp, err := api.New().Post("/api/zones/import", q, bytes.NewReader(data), "text/plain")
 		if err != nil {
 			fmt.Printf("Request failed: %v\n", err)
 			os.Exit(1)
 		}
 		defer resp.Body.Close()
 
-		body, _ := ioutil.ReadAll(resp.Body)
-
 		var result map[string]interface{}
-		if err := json.Unmarshal(body, &result); err == nil {
+		if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
 			if importJSON {
 				raw, _ := json.MarshalIndent(result, "", "  ")
 				fmt.Println(string(raw))
