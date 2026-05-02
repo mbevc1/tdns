@@ -7,19 +7,40 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/fatih/color"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var getJSON bool
 
 var backupOutputPath string
+
+// fullBackupQuery is the query-string set used for both backup and restore.
+func fullBackupQuery(extra map[string]string) url.Values {
+	q := url.Values{
+		"blockLists":   {"true"},
+		"logs":         {"true"},
+		"scopes":       {"true"},
+		"stats":        {"true"},
+		"zones":        {"true"},
+		"allowedZones": {"true"},
+		"blockedZones": {"true"},
+		"dnsSettings":  {"true"},
+		"logSettings":  {"true"},
+		"authConfig":   {"true"},
+	}
+	for k, v := range extra {
+		q.Set(k, v)
+	}
+	return q
+}
 
 var settingsCmd = &cobra.Command{
 	Use:     "settings",
@@ -32,12 +53,7 @@ var settingsBackupCmd = &cobra.Command{
 	Aliases: []string{"ba"},
 	Short:   "Download a backup zip file of selected server settings",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/settings/backup?token=%s&blockLists=true&logs=true&scopes=true&stats=true&zones=true&allowedZones=true&blockedZones=true&dnsSettings=true&logSettings=true&authConfig=true", host, token)
-
-		resp, err := http.Get(url)
+		resp, err := api.New().Get("/api/settings/backup", fullBackupQuery(nil))
 		if err != nil {
 			fmt.Printf("Request failed: %v\n", err)
 			os.Exit(1)
@@ -90,9 +106,6 @@ var settingsRestoreCmd = &cobra.Command{
 	Aliases: []string{"re"},
 	Short:   "Restore server settings from a backup zip file",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		if restoreInputPath == "" {
 			fmt.Fprintln(os.Stderr, "❌ --input is required")
 			os.Exit(1)
@@ -119,16 +132,8 @@ var settingsRestoreCmd = &cobra.Command{
 		}
 		writer.Close()
 
-		url := fmt.Sprintf("%s/api/settings/restore?token=%s&blockLists=true&logs=true&scopes=true&stats=true&zones=true&allowedZones=true&blockedZones=true&dnsSettings=true&logSettings=true&deleteExistingFiles=true&authConfig=true", host, token)
-		req, err := http.NewRequest("POST", url, body)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to create request: %v\n", err)
-			os.Exit(1)
-		}
-		req.Header.Set("Content-Type", writer.FormDataContentType())
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		q := fullBackupQuery(map[string]string{"deleteExistingFiles": "true"})
+		resp, err := api.New().Post("/api/settings/restore", q, body, writer.FormDataContentType())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
 			os.Exit(1)
@@ -204,43 +209,22 @@ var settingsGetCmd = &cobra.Command{
 	Aliases: []string{"ge"},
 	Short:   "Retrieve current server settings",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/settings/get?token=%s", host, token)
-
-		resp, err := http.Get(url)
+		result, response, err := api.New().GetJSON("/api/settings/get", nil)
 		if err != nil {
-			fmt.Printf("❌ Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			fmt.Fprintf(os.Stderr, "❌ Failed: HTTP %d\n", resp.StatusCode)
-			os.Exit(1)
-		}
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
 		if getJSON {
 			raw, _ := json.MarshalIndent(result, "", "  ")
 			fmt.Println(string(raw))
-
 			return
 		}
-
-		response := result["response"].(map[string]interface{})
 
 		bold := color.New(color.Bold).SprintFunc()
 		cyan := color.New(color.FgCyan).SprintFunc()
 		green := color.New(color.FgGreen).SprintFunc()
 		yellow := color.New(color.FgYellow).SprintFunc()
-		//gray := color.New(color.FgHiBlack).SprintFunc()
 
 		fmt.Println(bold("General Settings:"))
 		fmt.Printf("  Version: %s\n", green(response["version"]))

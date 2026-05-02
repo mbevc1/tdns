@@ -3,12 +3,14 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var (
@@ -18,7 +20,6 @@ var (
 	assumeYes  bool
 	zoneName   string
 	recordTTL  int
-	rTTL       string
 	ipAddress  string
 	cnameValue string
 	domainName string
@@ -30,31 +31,15 @@ var recordsGetCmd = &cobra.Command{
 	Short:   "List all DNS records for a zone",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		zone := args[0]
-		url := fmt.Sprintf("%s/api/zones/records/get?token=%s&domain=%s&zone=%s&listZone=true", host, token, zone, zone)
-
-		resp, err := http.Get(url)
+		q := url.Values{
+			"domain":   {zone},
+			"zone":     {zone},
+			"listZone": {"true"},
+		}
+		result, response, err := api.New().GetJSON("/api/zones/records/get", q)
 		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -62,12 +47,6 @@ var recordsGetCmd = &cobra.Command{
 			raw, _ := json.MarshalIndent(result, "", "  ")
 			fmt.Println(string(raw))
 			return
-		}
-
-		response, ok := result["response"].(map[string]interface{})
-		if !ok {
-			fmt.Println("Unexpected response structure")
-			os.Exit(1)
 		}
 
 		records, ok := response["records"].([]interface{})
@@ -88,16 +67,10 @@ var recordsGetCmd = &cobra.Command{
 			ttl := rec["ttl"]
 			recordValue := "None"
 			if rVal, ok := rec["rData"]; ok && rVal != nil {
-				//recordValue = fmt.Sprintf("%v", rVal)
-				recordValue = fmt.Sprintf("%s", FormatMap(rVal))
+				recordValue = FormatMap(rVal)
 			}
 
-			fmt.Printf("%s  %s  %g  %s\n",
-				greenL(name),
-				rtype,
-				ttl,
-				recordValue,
-			)
+			fmt.Printf("%s  %s  %g  %s\n", greenL(name), rtype, ttl, recordValue)
 		}
 	},
 }
@@ -108,55 +81,40 @@ var recordsCmd = &cobra.Command{
 	Short:   "Manage zone records",
 }
 
+func recordQuery() url.Values {
+	q := url.Values{
+		"domain": {domainName},
+		"zone":   {zoneName},
+		"type":   {recordType},
+	}
+	if recordTTL >= 0 {
+		q.Set("ttl", strconv.Itoa(recordTTL))
+	}
+	if ipAddress != "" {
+		q.Set("ipAddress", ipAddress)
+	}
+	if cnameValue != "" {
+		q.Set("cname", cnameValue)
+	}
+	return q
+}
+
 var recordsAddCmd = &cobra.Command{
 	Use:     "add",
 	Aliases: []string{"a"},
 	Short:   "Add a new record to a zone",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		if zoneName == "" || recordType == "" {
 			fmt.Fprintln(os.Stderr, "❌ --zone and --type are required")
 			os.Exit(1)
 		}
 
-		if recordTTL < 0 {
-			rTTL = ""
-		} else {
-			rTTL = fmt.Sprintf("&ttl=%d", recordTTL)
-		}
+		q := recordQuery()
+		q.Set("overwrite", strconv.FormatBool(overwrite))
 
-		url := fmt.Sprintf("%s/api/zones/records/add?token=%s&domain=%s&zone=%s&type=%s%s",
-			host, token, domainName, zoneName, recordType, rTTL)
-		url += fmt.Sprintf("&overwrite=%t", overwrite)
-
-		if ipAddress != "" {
-			url += fmt.Sprintf("&ipAddress=%s", ipAddress)
-		}
-		if cnameValue != "" {
-			url += fmt.Sprintf("&cname=%s", cnameValue)
-		}
-
-		resp, err := http.Get(url)
+		result, _, err := api.New().GetJSON("/api/zones/records/add", q)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -173,28 +131,9 @@ var recordsDeleteCmd = &cobra.Command{
 	Aliases: []string{"d", "del"},
 	Short:   "Delete a record from a zone",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		if zoneName == "" || recordType == "" {
 			fmt.Fprintln(os.Stderr, "❌ --zone and --type are required")
 			os.Exit(1)
-		}
-
-		if recordTTL < 0 {
-			rTTL = ""
-		} else {
-			rTTL = fmt.Sprintf("&ttl=%d", recordTTL)
-		}
-
-		url := fmt.Sprintf("%s/api/zones/records/delete?token=%s&domain=%s&zone=%s&type=%s%s",
-			host, token, domainName, zoneName, recordType, rTTL)
-
-		if ipAddress != "" {
-			url += fmt.Sprintf("&ipAddress=%s", ipAddress)
-		}
-		if cnameValue != "" {
-			url += fmt.Sprintf("&cname=%s", cnameValue)
 		}
 
 		if !assumeYes {
@@ -207,25 +146,8 @@ var recordsDeleteCmd = &cobra.Command{
 			}
 		}
 
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+		if _, _, err := api.New().GetJSON("/api/zones/records/delete", recordQuery()); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 

@@ -8,6 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 // Name & Version of the app
@@ -37,8 +39,6 @@ var rootCmd = &cobra.Command{
 
 func Execute(version string) {
 	Version = version
-	// fmt.Println()
-	// defer fmt.Println()
 
 	rootCmd.Version = version
 
@@ -59,8 +59,12 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&debugFlag, "debug", "d", false, "Enable debugging logging")
 	rootCmd.PersistentFlags().StringP("token", "t", "", "API token (overrides config/TDNS_API_TOKEN env)")
 	rootCmd.PersistentFlags().StringP("endpoint", "e", "", "API endpoint (overrides config)")
+	rootCmd.PersistentFlags().BoolP("legacy-token", "L", false, "Also send token as a query parameter (for older servers/endpoints that don't honor Authorization: Bearer)")
+	rootCmd.PersistentFlags().DurationP("timeout", "T", api.DefaultTimeout, "API request timeout (e.g. 5s, 1m)")
 	viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token"))
 	viper.BindPFlag("host", rootCmd.PersistentFlags().Lookup("endpoint"))
+	viper.BindPFlag("legacy_token", rootCmd.PersistentFlags().Lookup("legacy-token"))
+	viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 
 	viper.SetEnvPrefix("TDNS")
 	viper.AutomaticEnv()

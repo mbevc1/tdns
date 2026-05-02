@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var (
@@ -36,8 +36,6 @@ var setZoneOptionsCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		zone := args[0]
-		token := viper.GetString("token")
-		host := viper.GetString("host")
 
 		// styles
 		bold := color.New(color.Bold).SprintFunc()
@@ -83,7 +81,6 @@ var setZoneOptionsCmd = &cobra.Command{
 
 		// 2) Build query params from base payload first
 		q := url.Values{}
-		q.Set("token", token)
 		q.Set("zone", zone)
 
 		// Helper to set a key from "base" map if present
@@ -139,34 +136,15 @@ var setZoneOptionsCmd = &cobra.Command{
 			q.Set("notifyNameServers", joinCSV(flagNotifyNameServers))
 		}
 
-		// If only token/zone are present, nothing was set
-		if len(q) <= 2 {
+		// If only zone is present, nothing was set
+		if len(q) <= 1 {
 			fmt.Fprintln(os.Stderr, red("❌ no options provided — use flags and/or --data-file/--stdin"))
 			os.Exit(1)
 		}
 
 		// 4) Call API with query params (GET, per API expectation)
-		endpoint := fmt.Sprintf("%s/api/zones/options/set?%s", host, q.Encode())
-		resp, err := http.Get(endpoint)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s request failed: %v\n", red("❌"), err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "%s invalid response: %v\n", red("❌"), err)
-			os.Exit(1)
-		}
-
-		// If status != ok, print only errorMessage (if present), else generic
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok && strings.TrimSpace(msg) != "" {
-				fmt.Fprintln(os.Stderr, red("❌ ")+msg)
-			} else {
-				fmt.Fprintln(os.Stderr, red("❌ Unexpected API error"))
-			}
+		if _, _, err := api.New().GetJSON("/api/zones/options/set", q); err != nil {
+			fmt.Fprintf(os.Stderr, "%s %v\n", red("❌"), err)
 			os.Exit(1)
 		}
 

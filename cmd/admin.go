@@ -3,14 +3,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"net/url"
 	"os"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"golang.org/x/term"
+
+	"tdns/internal/api"
 )
 
 var adminCmd = &cobra.Command{
@@ -33,35 +34,9 @@ var listSessionsCmd = &cobra.Command{
 	Short:       "List active sessions",
 	Annotations: map[string]string{"group": "Session Management"},
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/admin/sessions/list?token=%s", host, token)
-		resp, err := http.Get(url)
+		_, response, err := api.New().GetJSON("/api/admin/sessions/list", nil)
 		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
-			os.Exit(1)
-		}
-
-		response, ok := result["response"].(map[string]interface{})
-		if !ok {
-			fmt.Println("Unexpected response structure")
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -116,30 +91,9 @@ var deleteSessionCmd = &cobra.Command{
 			return
 		}
 
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/admin/sessions/delete?token=%s&partialToken=%s", host, token, sessionID)
-
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+		q := url.Values{"partialToken": {sessionID}}
+		if _, _, err := api.New().GetJSON("/api/admin/sessions/delete", q); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -158,34 +112,13 @@ var createTokenCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/admin/sessions/createToken?token=%s&user=%s&tokenName=%s", host, token, createTokenUser, createTokenName)
-
-		resp, err := http.Get(url)
+		q := url.Values{"user": {createTokenUser}, "tokenName": {createTokenName}}
+		_, response, err := api.New().GetJSON("/api/admin/sessions/createToken", q)
 		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
-			os.Exit(1)
-		}
-
-		response, _ := result["response"].(map[string]interface{})
 		fmt.Println("✅ Token created successfully:")
 		fmt.Printf("  Username: %s\n", response["username"])
 		fmt.Printf("  Token Name: %s\n", response["tokenName"])
@@ -198,34 +131,12 @@ var adminListUsersCmd = &cobra.Command{
 	Aliases: []string{"lu"},
 	Short:   "List all system users",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/admin/users/list?token=%s", host, token)
-
-		resp, err := http.Get(url)
+		_, response, err := api.New().GetJSON("/api/admin/users/list", nil)
 		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
-			os.Exit(1)
-		}
-
-		response := result["response"].(map[string]interface{})
 		users, ok := response["users"].([]interface{})
 		if !ok || len(users) == 0 {
 			fmt.Println("No users found.")
@@ -264,33 +175,13 @@ var adminGetUserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-		url := fmt.Sprintf("%s/api/admin/users/get?token=%s&user=%s&includeGroups=true", host, token, getUser)
-
-		resp, err := http.Get(url)
+		q := url.Values{"user": {getUser}, "includeGroups": {"true"}}
+		_, user, err := api.New().GetJSON("/api/admin/users/get", q)
 		if err != nil {
-			fmt.Printf("Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Printf("Invalid response: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
-			os.Exit(1)
-		}
-
-		user := result["response"].(map[string]interface{})
 		bold := color.New(color.Bold).SprintFunc()
 		green := color.New(color.FgGreen).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
@@ -324,20 +215,9 @@ var adminCheckUpdateCmd = &cobra.Command{
 	Aliases: []string{"cu"},
 	Short:   "Check for available updates",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		url := fmt.Sprintf("%s/api/user/checkForUpdate?token=%s", host, token)
-		resp, err := http.Get(url)
+		result, respData, err := api.New().GetJSON("/api/user/checkForUpdate", nil)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -347,16 +227,6 @@ var adminCheckUpdateCmd = &cobra.Command{
 			return
 		}
 
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
-			os.Exit(1)
-		}
-
-		respData := result["response"].(map[string]interface{})
 		bold := color.New(color.Bold).SprintFunc()
 		green := color.New(color.FgGreen).SprintFunc()
 		red := color.New(color.FgRed).SprintFunc()
@@ -381,10 +251,6 @@ var adminChangePasswordCmd = &cobra.Command{
 	Aliases: []string{"cp"},
 	Short:   "Change the current user's password",
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
-		// Interactive mode
 		if newPassword == "" && interactive {
 			fmt.Print("Enter new password: ")
 			bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -405,33 +271,13 @@ var adminChangePasswordCmd = &cobra.Command{
 			newPassword = string(bytePassword)
 		}
 
-		// Get as parameter (unsecure)
 		if newPassword == "" {
 			fmt.Fprintln(os.Stderr, "❌ --pass is required")
 			os.Exit(1)
 		}
 
-		url := fmt.Sprintf("%s/api/user/changePassword?token=%s&pass=%s", host, token, newPassword)
-
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Request failed: %v\n", err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Failed to parse response: %v\n", err)
-			os.Exit(1)
-		}
-
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok {
-				fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-			} else {
-				fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-			}
+		if _, _, err := api.New().GetJSON("/api/user/changePassword", url.Values{"pass": {newPassword}}); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 

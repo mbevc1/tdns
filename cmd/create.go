@@ -1,14 +1,15 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 var validZoneTypes = map[string]bool{
@@ -27,9 +28,6 @@ var createCmd = &cobra.Command{
 	Short:   "Create one or more DNS zones",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("token")
-		host := viper.GetString("host")
-
 		zoneType, _ := cmd.Flags().GetString("type")
 		useSerial, _ := cmd.Flags().GetBool("useSoaSerialDateScheme")
 		nameServers, _ := cmd.Flags().GetString("primaryNameServerAddresses")
@@ -43,37 +41,22 @@ var createCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		client := api.New()
 		for _, zone := range args {
-			url := fmt.Sprintf("%s/api/zones/create?token=%s&zone=%s&type=%s&useSoaSerialDateScheme=%t",
-				host, token, zone, zoneType, useSerial)
-
+			q := url.Values{
+				"zone":                   {zone},
+				"type":                   {zoneType},
+				"useSoaSerialDateScheme": {strconv.FormatBool(useSerial)},
+			}
 			if nameServers != "" {
-				url += fmt.Sprintf("&primaryNameServerAddresses=%s", nameServers)
+				q.Set("primaryNameServerAddresses", nameServers)
 			}
 
-			resp, err := http.Get(url)
+			_, response, err := client.GetJSON("/api/zones/create", q)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ Failed to create zone %s: %v\n", zone, err)
-				continue
-			}
-			defer resp.Body.Close()
-
-			var result map[string]interface{}
-			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-				fmt.Printf("Invalid response: %v\n", err)
 				os.Exit(1)
 			}
-
-			if status, ok := result["status"].(string); !ok || status != "ok" {
-				if msg, ok := result["errorMessage"].(string); ok {
-					fmt.Fprintf(os.Stderr, "❌ %s\n", msg)
-				} else {
-					fmt.Fprintln(os.Stderr, "❌ Unexpected API error")
-				}
-				os.Exit(1)
-			}
-
-			response := result["response"].(map[string]interface{})
 			fmt.Printf("✅ Zone %v created successfully.\n", response["domain"])
 		}
 	},

@@ -3,14 +3,16 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"net/url"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+
+	"tdns/internal/api"
 )
 
 type sprinter func(a ...interface{}) string
@@ -27,8 +29,6 @@ var getZoneOptionsCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		zone := args[0]
-		token := viper.GetString("token")
-		host := viper.GetString("host")
 
 		// Colors & styles to match existing CLI look-and-feel
 		bold := color.New(color.Bold).SprintFunc()
@@ -38,35 +38,13 @@ var getZoneOptionsCmd = &cobra.Command{
 		red := color.New(color.FgRed).SprintFunc()
 		gray := color.New(color.FgHiBlack).SprintFunc()
 
-		url := fmt.Sprintf("%s/api/zones/options/get?token=%s&zone=%s&includeAvailableTsigKeyNames=%t",
-			host, token, zone, includeAvailableKeys)
-
-		resp, err := http.Get(url)
+		q := url.Values{
+			"zone":                         {zone},
+			"includeAvailableTsigKeyNames": {strconv.FormatBool(includeAvailableKeys)},
+		}
+		_, respObj, err := api.New().GetJSON("/api/zones/options/get", q)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s request failed: %v\n", red("❌"), err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			fmt.Fprintf(os.Stderr, "%s invalid response: %v\n", red("❌"), err)
-			os.Exit(1)
-		}
-
-		// If status != ok, print only errorMessage (if present), else generic
-		if status, ok := result["status"].(string); !ok || status != "ok" {
-			if msg, ok := result["errorMessage"].(string); ok && strings.TrimSpace(msg) != "" {
-				fmt.Fprintln(os.Stderr, red("❌ ")+msg)
-			} else {
-				fmt.Fprintln(os.Stderr, red("❌ Unexpected API error"))
-			}
-			os.Exit(1)
-		}
-
-		respObj, ok := result["response"].(map[string]interface{})
-		if !ok {
-			fmt.Fprintln(os.Stderr, red("❌ Unexpected response structure"))
+			fmt.Fprintf(os.Stderr, "%s %v\n", red("❌"), err)
 			os.Exit(1)
 		}
 
