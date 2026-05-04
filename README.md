@@ -78,7 +78,7 @@ tdns logs deleteAll
 tdns admin list-sessions
 tdns admin delete-session --id <partialToken>
 tdns admin create-token --user admin --token-name mytoken
-tdns admin change-password -i [-p <pass>]
+tdns admin change-password -i [-c <current>] [-n <new>] [-o <totp>] [--iterations <n>]
 tdns admin check-update [--json]
 ```
 

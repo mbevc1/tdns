@@ -65,6 +65,8 @@ release:
   prerelease: auto
   draft: false
   disable: false
+  # release-please already created the GitHub Release; append artifacts to it.
+  mode: append
   name_template: "v{{ .Version }}"
   footer: |
     **Full Changelog**: https://github.com/mbevc1/tdns/compare/{{ .PreviousTag }}...{{ if .IsNightly }}nightly{{ else }}{{ .Tag }}{{ end }}
@@ -77,6 +79,8 @@ checksum:
   algorithm: sha256
 
 changelog:
+  # CHANGELOG/release notes are owned by release-please.
+  disable: true
   use: github #git # github(-native)
   sort: asc
   format: "{{ .SHA }}: {{ .Message }}{{ with .AuthorUsername }} (@{{ . }}){{ end }}"

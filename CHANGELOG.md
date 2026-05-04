@@ -16,6 +16,10 @@
 ### Changed
 - Renamed `--type` to `--filter` for consistency
 - Added confirmation for destructive actions
+- `admin change-password`: align with upstream Technitium API. Now requires
+  current password (`-c`/`--current`) plus new password (`-n`/`--new`), with
+  optional `-o`/`--totp` and `--iterations` flags. Replaces the previous
+  single `-p`/`--pass` flag.
 
 ### Fixed
 - Removed redundant fallback checks across command files

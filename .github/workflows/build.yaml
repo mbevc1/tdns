@@ -30,7 +30,7 @@ jobs:
     - name: Lint
       run: |
         #go mod tidy
-        make fmt
+        make fmt-check
         make vet
         #go get -u golang.org/x/lint/golint
         #make lint

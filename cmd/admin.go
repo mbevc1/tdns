@@ -25,6 +25,9 @@ var createTokenUser string
 var createTokenName string
 var getUser string
 var newPassword string
+var currentPassword string
+var totpCode string
+var pbkdf2Iterations int
 var interactive bool
 var JSON bool
 
@@ -251,32 +254,61 @@ var adminChangePasswordCmd = &cobra.Command{
 	Aliases: []string{"cp"},
 	Short:   "Change the current user's password",
 	Run: func(cmd *cobra.Command, args []string) {
-		if newPassword == "" && interactive {
-			fmt.Print("Enter new password: ")
-			bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
-			fmt.Println()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "❌ Failed to read password: %v\n", err)
-				os.Exit(1)
+		if interactive {
+			if currentPassword == "" {
+				fmt.Print("Enter current password: ")
+				byteCurrent, err := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Println()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Failed to read password: %v\n", err)
+					os.Exit(1)
+				}
+				currentPassword = string(byteCurrent)
 			}
 
-			fmt.Print("Confirm new password: ")
-			byteConfirm, _ := term.ReadPassword(int(os.Stdin.Fd()))
-			fmt.Println()
-			if string(byteConfirm) != string(bytePassword) {
-				fmt.Fprintln(os.Stderr, "❌ Passwords do not match")
-				os.Exit(1)
-			}
+			if newPassword == "" {
+				fmt.Print("Enter new password: ")
+				bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Println()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Failed to read password: %v\n", err)
+					os.Exit(1)
+				}
 
-			newPassword = string(bytePassword)
+				fmt.Print("Confirm new password: ")
+				byteConfirm, _ := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Println()
+				if string(byteConfirm) != string(bytePassword) {
+					fmt.Fprintln(os.Stderr, "❌ Passwords do not match")
+					os.Exit(1)
+				}
+
+				newPassword = string(bytePassword)
+			}
 		}
 
-		if newPassword == "" {
-			fmt.Fprintln(os.Stderr, "❌ --pass is required")
+		if currentPassword == "" {
+			fmt.Fprintln(os.Stderr, "❌ --current is required")
 			os.Exit(1)
 		}
 
-		if _, _, err := api.New().GetJSON("/api/user/changePassword", url.Values{"pass": {newPassword}}); err != nil {
+		if newPassword == "" {
+			fmt.Fprintln(os.Stderr, "❌ --new is required")
+			os.Exit(1)
+		}
+
+		params := url.Values{
+			"pass":    {currentPassword},
+			"newPass": {newPassword},
+		}
+		if totpCode != "" {
+			params.Set("totp", totpCode)
+		}
+		if pbkdf2Iterations > 0 {
+			params.Set("iterations", fmt.Sprintf("%d", pbkdf2Iterations))
+		}
+
+		if _, _, err := api.New().GetJSON("/api/user/changePassword", params); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
@@ -287,7 +319,10 @@ var adminChangePasswordCmd = &cobra.Command{
 
 func init() {
 	adminChangePasswordCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "Prompt for password interactively")
-	adminChangePasswordCmd.Flags().StringVarP(&newPassword, "pass", "p", "", "New password (insecure)")
+	adminChangePasswordCmd.Flags().StringVarP(&currentPassword, "current", "c", "", "Current password (insecure)")
+	adminChangePasswordCmd.Flags().StringVarP(&newPassword, "new", "n", "", "New password (insecure)")
+	adminChangePasswordCmd.Flags().StringVarP(&totpCode, "totp", "o", "", "6-digit TOTP code if 2FA is enabled")
+	adminChangePasswordCmd.Flags().IntVar(&pbkdf2Iterations, "iterations", 0, "Number of iterations for PBKDF2 SHA256 password hashing")
 	adminCmd.AddCommand(adminChangePasswordCmd)
 	adminCmd.AddCommand(adminCheckUpdateCmd)
 	adminCheckUpdateCmd.Flags().BoolVar(&JSON, "json", false, "Output raw JSON response")
