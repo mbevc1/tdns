@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.1](https://github.com/mbevc1/tdns/compare/v0.6.0...v0.6.1) (2026-05-04)
+
+
+### Features
+
+* align change-password with upstream API ([b8480f0](https://github.com/mbevc1/tdns/commit/b8480f0432a61bd05d03bcc49444c3c431e420ae))
+
+
+### Bug Fixes
+
+* code formatting ([47b7b3b](https://github.com/mbevc1/tdns/commit/47b7b3b43ab8a5abf4cd1890b52e5f8f3676e406))
+* remove unsupported Release Please parameter ([a51cf50](https://github.com/mbevc1/tdns/commit/a51cf5052e34da376e86c6fb38d3b650f79dfc9b))
+
+
+### Miscellaneous Chores
+
+* release 0.6.1 ([f2d4294](https://github.com/mbevc1/tdns/commit/f2d4294a25c1fe97d85602ce69aee3988aaff2c8))
+
 ## [dev] - In Development
 
 ### Added
