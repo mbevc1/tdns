@@ -27,7 +27,6 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         release-type: go
-        package-name: tdns
 
   goreleaser:
     name: GoReleaser
