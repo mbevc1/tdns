@@ -1,4 +1,4 @@
-.PHONY: help vendor build clean help
+.PHONY: help vendor build clean clean-vendor clean-cache tidy run snapshot dev test fmt fmt-check lint vet
 .DEFAULT: help
 ifndef VERBOSE
 .SILENT:
@@ -64,8 +64,16 @@ dev: clean ## Dev test target
 test: vendor ## Run tests
 	go test -v ./...
 
-fmt: **/*.go ## Formt Golang code
+fmt: **/*.go ## Format Golang code
 	go fmt ./...
+
+fmt-check: ## Fail if Go code is not gofmt-clean
+	@unformatted=$$(gofmt -l .); \
+	if [ -n "$$unformatted" ]; then \
+		echo "The following files are not gofmt-clean:"; \
+		echo "$$unformatted"; \
+		exit 1; \
+	fi
 
 lint:
 	golint ./...

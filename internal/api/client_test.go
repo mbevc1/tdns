@@ -15,13 +15,13 @@ import (
 
 func TestBuildURL(t *testing.T) {
 	tests := []struct {
-		name        string
-		host        string
-		path        string
-		token       string
-		legacy      bool
-		query       url.Values
-		want        string
+		name   string
+		host   string
+		path   string
+		token  string
+		legacy bool
+		query  url.Values
+		want   string
 	}{
 		{
 			name: "trailing slash trimmed",
