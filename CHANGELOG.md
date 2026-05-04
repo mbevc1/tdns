@@ -6,13 +6,11 @@
 ### Features
 
 * align change-password with upstream API ([b8480f0](https://github.com/mbevc1/tdns/commit/b8480f0432a61bd05d03bcc49444c3c431e420ae))
-* align change-password with upstream API ([72649c3](https://github.com/mbevc1/tdns/commit/72649c3d7bb298bb56e46a1eb07f68fae6cc43e8))
 
 
 ### Bug Fixes
 
 * code formatting ([47b7b3b](https://github.com/mbevc1/tdns/commit/47b7b3b43ab8a5abf4cd1890b52e5f8f3676e406))
-* remove unsupported Release Please parameter ([ebee214](https://github.com/mbevc1/tdns/commit/ebee2144b2448174f61b72538288b85384c9b680))
 * remove unsupported Release Please parameter ([a51cf50](https://github.com/mbevc1/tdns/commit/a51cf5052e34da376e86c6fb38d3b650f79dfc9b))
 
 
