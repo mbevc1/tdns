@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/mbevc1/tdns/compare/v0.6.1...v0.6.2) (2026-06-09)
+
+
+### Miscellaneous Chores
+
+* release 0.6.2 ([4e5cea8](https://github.com/mbevc1/tdns/commit/4e5cea8e118f4d64935f5265620cd9da538b3c3a))
+
 ## [0.6.1](https://github.com/mbevc1/tdns/compare/v0.6.0...v0.6.1) (2026-05-04)
 
 
