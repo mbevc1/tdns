@@ -6,7 +6,6 @@
 ### Features
 
 * **list:** support zones list filtering and pagination (API v15.3) ([168c5ea](https://github.com/mbevc1/tdns/commit/168c5ea78b30efd6270cb2a380de81dbc2a81788))
-* **list:** support zones list filtering and pagination (API v15.3) ([0d00433](https://github.com/mbevc1/tdns/commit/0d00433010d18a1257dc874791ccbce1bb8029ec))
 
 
 ### Miscellaneous Chores
