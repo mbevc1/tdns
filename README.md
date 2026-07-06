@@ -50,7 +50,7 @@ You can also use:
 ### Zones
 
 ```bash
-tdns list [--json]
+tdns list [--name 'example.*'] [--type Primary] [--page 1 --per-page 10] [--json]
 tdns import <zone> --file zone.txt [--json]
 tdns export <zone> [--output-dir dir] [--json]
 tdns create <zone>... [--type Primary]
