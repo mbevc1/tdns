@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/mbevc1/tdns/compare/v0.6.2...v0.7.0) (2026-07-06)
+
+
+### Features
+
+* **list:** support zones list filtering and pagination (API v15.3) ([168c5ea](https://github.com/mbevc1/tdns/commit/168c5ea78b30efd6270cb2a380de81dbc2a81788))
+* **list:** support zones list filtering and pagination (API v15.3) ([0d00433](https://github.com/mbevc1/tdns/commit/0d00433010d18a1257dc874791ccbce1bb8029ec))
+
+
+### Miscellaneous Chores
+
+* release 0.7.0 ([477cf47](https://github.com/mbevc1/tdns/commit/477cf47c29013933f516865fb0680febb5a624ca))
+
 ## [0.6.2](https://github.com/mbevc1/tdns/compare/v0.6.1...v0.6.2) (2026-06-09)
 
 
