@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/mbevc1/tdns/compare/v0.7.0...v0.7.1) (2026-07-14)
+
+
+### Miscellaneous Chores
+
+* release 0.7.1 ([afa0aed](https://github.com/mbevc1/tdns/commit/afa0aed6590eec1ce9c1703e8463e33d8635c6fd))
+
 ## [0.7.0](https://github.com/mbevc1/tdns/compare/v0.6.2...v0.7.0) (2026-07-06)
 
 
