@@ -51,11 +51,64 @@ You can also use:
 
 ```bash
 tdns list [--name 'example.*'] [--type Primary] [--page 1 --per-page 10] [--json]
-tdns import <zone> --file zone.txt [--json]
+tdns import <zone> --file zone.txt|- [--overwrite-zone] [--create] [--json]
 tdns export <zone> [--output-dir dir] [--json]
 tdns create <zone>... [--type Primary]
 tdns delete <zone>...
 ```
+
+#### Importing zones
+
+`tdns import` posts an RFC 1035 (BIND style) zone file to an existing Primary or
+Forwarder zone. Add `--create` to create the zone first if it isn't there yet
+(`--type Forwarder` to create a Forwarder zone instead of a Primary one); it's a
+no-op when the zone already exists, so it's safe to leave on in automation.
+
+`--file` (`-f`) is required, and `--file -` reads the zone from standard input,
+so a generated zone file needs no temporary file:
+
+```bash
+generate-zone example.com | tdns import example.com --file -
+```
+
+Empty input is rejected rather than posted, since an empty import combined with
+`--overwrite-zone` would clear the zone and put nothing back.
+
+Import behaviour is controlled by three flags mapping to the API parameters:
+
+| Flag | Default | Effect |
+| --- | --- | --- |
+| `--overwrite` | `true` | Overwrite existing record sets for the records being imported |
+| `--overwrite-zone` | `false` | Delete **all** existing records in the zone first, so only the imported ones remain (needs Technitium v15.0+) |
+| `--overwrite-soa-serial` | `true` | Use the SOA serial from the file instead of bumping the current one |
+
+So a full replace from a generated zone file is:
+
+```bash
+tdns import example.com --file example.com.zone --create --overwrite-zone --yes
+```
+
+> [!WARNING]
+`--overwrite-zone` also deletes the zone's apex `NS` records, so your zone file
+must contain them or the zone will be left with none. The zone's `SOA` record is
+kept (and is optional in the file), and DNSSEC records are always managed by the
+server — it ignores `DNSKEY`/`RRSIG`/`NSEC`/`NSEC3`/`NSEC3PARAM` on import and
+keeps the existing ones. `tdns export` output is safe to feed straight back in.
+You'll be asked to confirm unless you pass `--yes` (`-y`).
+
+> [!NOTE]
+Because servers older than v15.0 silently ignore unknown parameters — and would
+therefore import *without* clearing the zone — `--overwrite-zone` checks the
+server version first and refuses to run against an older server. If the version
+can't be read (for example when the API token has no permission to read
+settings) you get a warning and the import proceeds.
+
+> [!NOTE]
+`--overwrite-soa-serial` defaults to `true` to match earlier `tdns` releases,
+which differs from the API's own default of `false`. Importing a file whose
+serial is *lower* than the zone's current serial will make secondary zones fail
+to sync — pass `--overwrite-soa-serial=false` to let the server bump the serial
+itself instead.
 
 ### Records
 
