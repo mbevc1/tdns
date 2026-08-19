@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strconv"
@@ -56,6 +57,35 @@ func checkOverwriteZoneSupported(client *api.Client) {
 	}
 }
 
+// readZoneFile reads the zone file at path, or standard input when path is
+// "-". Empty input is rejected: posting nothing would silently succeed, and
+// combined with --overwrite-zone it would clear the zone and put nothing back.
+func readZoneFile(path string) ([]byte, error) {
+	var (
+		data []byte
+		err  error
+	)
+	if path == "-" {
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read zone file from stdin: %w", err)
+		}
+	} else {
+		data, err = os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read zone file: %w", err)
+		}
+	}
+
+	if len(bytes.TrimSpace(data)) == 0 {
+		if path == "-" {
+			return nil, fmt.Errorf("no zone data received on stdin")
+		}
+		return nil, fmt.Errorf("zone file %s is empty", path)
+	}
+	return data, nil
+}
+
 // buildImportQuery maps the import flags onto /api/zones/import query
 // parameters. `overwriteZone` is only sent when enabled so that the request
 // stays identical to previous releases against servers older than v15.0.
@@ -77,6 +107,11 @@ var importCmd = &cobra.Command{
 	Short:   "Import a DNS zone",
 	Long: `Import records from an RFC 1035 (BIND style) zone file into an existing zone.
 
+The zone file is named with --file, or read from standard input when --file is
+"-", so a generated zone file can be piped straight in:
+
+  generate-zone example.com | tdns import example.com --file -
+
 The zone must already exist and be of type Primary or Forwarder; pass --create
 to create it first.
 
@@ -95,9 +130,9 @@ NSEC3PARAM), which the server always manages itself and ignores on import.`,
 			os.Exit(1)
 		}
 
-		data, err := os.ReadFile(importFile)
+		data, err := readZoneFile(importFile)
 		if err != nil {
-			fmt.Printf("Failed to read file: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
 		}
 
@@ -165,7 +200,10 @@ NSEC3PARAM), which the server always manages itself and ignores on import.`,
 }
 
 func init() {
-	importCmd.Flags().StringVarP(&importFile, "file", "f", "data.txt", "Zone file to import")
+	importCmd.Flags().StringVarP(&importFile, "file", "f", "", "Zone file to import, or - to read it from stdin (required)")
+	if err := importCmd.MarkFlagRequired("file"); err != nil {
+		panic(err)
+	}
 	importCmd.Flags().BoolVar(&importJSON, "json", false, "Print raw JSON response")
 	importCmd.Flags().BoolVar(&importOverwrite, "overwrite", true, "Overwrite existing record sets for the records being imported")
 	importCmd.Flags().BoolVar(&importOverwriteZone, "overwrite-zone", false, "Delete all existing records in the zone before importing (Technitium v15.0+)")

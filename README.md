@@ -51,7 +51,7 @@ You can also use:
 
 ```bash
 tdns list [--name 'example.*'] [--type Primary] [--page 1 --per-page 10] [--json]
-tdns import <zone> --file zone.txt [--overwrite-zone] [--create] [--json]
+tdns import <zone> --file zone.txt|- [--overwrite-zone] [--create] [--json]
 tdns export <zone> [--output-dir dir] [--json]
 tdns create <zone>... [--type Primary]
 tdns delete <zone>...
@@ -63,6 +63,16 @@ tdns delete <zone>...
 Forwarder zone. Add `--create` to create the zone first if it isn't there yet
 (`--type Forwarder` to create a Forwarder zone instead of a Primary one); it's a
 no-op when the zone already exists, so it's safe to leave on in automation.
+
+`--file` (`-f`) is required, and `--file -` reads the zone from standard input,
+so a generated zone file needs no temporary file:
+
+```bash
+generate-zone example.com | tdns import example.com --file -
+```
+
+Empty input is rejected rather than posted, since an empty import combined with
+`--overwrite-zone` would clear the zone and put nothing back.
 
 Import behaviour is controlled by three flags mapping to the API parameters:
 

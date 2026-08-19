@@ -74,6 +74,17 @@ type importRequest struct {
 // the requests it received, in order.
 func runImportCmd(t *testing.T, handler func(r *http.Request) string, args ...string) []importRequest {
 	t.Helper()
+	reqs, err := execImportCmd(t, handler, args...)
+	if err != nil {
+		t.Fatalf("import command failed: %v", err)
+	}
+	return reqs
+}
+
+// execImportCmd is runImportCmd without the assertion, for cases that expect
+// the command to reject its arguments.
+func execImportCmd(t *testing.T, handler func(r *http.Request) string, args ...string) ([]importRequest, error) {
+	t.Helper()
 
 	var got []importRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +103,11 @@ func runImportCmd(t *testing.T, handler func(r *http.Request) string, args ...st
 	viper.Set("host", srv.URL)
 	defer viper.Set("host", oldHost)
 
-	// Reset flag-bound package vars from any previous invocation.
+	// Reset flag-bound package vars from any previous invocation. --file is a
+	// required flag, and cobra decides that from Changed, which persists across
+	// Execute calls; clear it so tests cannot mask a missing default.
+	importCmd.Flags().Lookup("file").Changed = false
+	importFile = ""
 	importJSON = false
 	importOverwrite = true
 	importOverwriteZone = false
@@ -110,23 +125,99 @@ func runImportCmd(t *testing.T, handler func(r *http.Request) string, args ...st
 
 	rootCmd.SetArgs(append([]string{"import"}, args...))
 	defer rootCmd.SetArgs(nil)
-	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("import command failed: %v", err)
-	}
+	err := rootCmd.Execute()
 	wp.Close()
 
-	return got
+	return got, err
 }
+
+const testZoneContents = "example.com. 3600 IN NS ns1.example.com.\n"
 
 // writeZoneFile creates a throwaway zone file and returns its path.
 func writeZoneFile(t *testing.T) string {
+	return writeTempFile(t, testZoneContents)
+}
+
+func writeTempFile(t *testing.T, contents string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "zone.txt")
-	contents := "example.com. 3600 IN NS ns1.example.com.\n"
 	if err := os.WriteFile(path, []byte(contents), 0644); err != nil {
 		t.Fatalf("write zone file: %v", err)
 	}
 	return path
+}
+
+func TestReadZoneFile(t *testing.T) {
+	data, err := readZoneFile(writeZoneFile(t))
+	if err != nil {
+		t.Fatalf("readZoneFile: %v", err)
+	}
+	if string(data) != testZoneContents {
+		t.Errorf("contents = %q, want %q", data, testZoneContents)
+	}
+
+	if _, err := readZoneFile(filepath.Join(t.TempDir(), "missing.txt")); err == nil {
+		t.Error("a missing file should error")
+	}
+
+	// Empty input must be refused rather than posted: with --overwrite-zone it
+	// would clear the zone and import nothing.
+	if _, err := readZoneFile(writeTempFile(t, "   \n\t\n")); err == nil {
+		t.Error("an empty file should error")
+	}
+}
+
+// withStdin points os.Stdin at a file holding contents for the duration of the
+// test.
+func withStdin(t *testing.T, contents string) {
+	t.Helper()
+	f, err := os.Open(writeTempFile(t, contents))
+	if err != nil {
+		t.Fatalf("open stdin stub: %v", err)
+	}
+	old := os.Stdin
+	os.Stdin = f
+	t.Cleanup(func() {
+		os.Stdin = old
+		f.Close()
+	})
+}
+
+func TestReadZoneFileFromStdin(t *testing.T) {
+	withStdin(t, testZoneContents)
+	data, err := readZoneFile("-")
+	if err != nil {
+		t.Fatalf("readZoneFile(\"-\"): %v", err)
+	}
+	if string(data) != testZoneContents {
+		t.Errorf("contents = %q, want %q", data, testZoneContents)
+	}
+}
+
+func TestReadZoneFileFromEmptyStdin(t *testing.T) {
+	withStdin(t, "")
+	if _, err := readZoneFile("-"); err == nil {
+		t.Error("empty stdin should error")
+	}
+}
+
+func TestImportCmdRequiresFile(t *testing.T) {
+	_, err := execImportCmd(t, okResponse, "example.com")
+	if err == nil {
+		t.Fatal("import without --file should fail")
+	}
+	if !strings.Contains(err.Error(), "file") {
+		t.Errorf("error should name the missing flag, got %v", err)
+	}
+}
+
+func TestImportCmdReadsStdin(t *testing.T) {
+	withStdin(t, testZoneContents)
+	reqs := runImportCmd(t, okResponse, "example.com", "--file", "-")
+	imp := findRequest(t, reqs, "/api/zones/import")
+	if imp.body != testZoneContents {
+		t.Errorf("body = %q, want the piped zone file %q", imp.body, testZoneContents)
+	}
 }
 
 // okResponse answers every call with success, reporting a server version new
