@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0](https://github.com/mbevc1/tdns/compare/v0.7.1...v0.8.0) (2026-08-19)
+
+
+### Features
+
+* **import:** add overwrite-zone, overwrite and create flags ([1386b9c](https://github.com/mbevc1/tdns/commit/1386b9ce9188184e5ec42031aa05b4427664ff06))
+* **import:** add overwrite-zone, overwrite and create flags ([8ab2e08](https://github.com/mbevc1/tdns/commit/8ab2e081b898c369aa6c29f8a143445b1d68208d)), closes [#72](https://github.com/mbevc1/tdns/issues/72)
+* **import:** require --file and accept the zone file on stdin ([74ab3c4](https://github.com/mbevc1/tdns/commit/74ab3c4f409f7266f37783835f93e51189b5c4b1))
+
 ## [0.7.1](https://github.com/mbevc1/tdns/compare/v0.7.0...v0.7.1) (2026-07-14)
 
 
