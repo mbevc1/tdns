@@ -86,6 +86,25 @@ func buildZonesListQuery(filterName, filterType string, page, perPage int) url.V
 	return q
 }
 
+// minServerSideFilterVersion is the first release whose /api/zones/list
+// honors filterName and filterType.
+const minServerSideFilterVersion = "15.3"
+
+// warnIfPaginatedFilterUnsupported warns when a filter is combined with
+// pagination against a server that does not filter server-side. Such a server
+// paginates the unfiltered list, so filterZones only ever sees one page:
+// matches on the other pages are invisible, and the totals in the response
+// describe the unfiltered set. A server that will not report its version stays
+// silent rather than warning about not being able to warn.
+func warnIfPaginatedFilterUnsupported(client *api.Client) {
+	ok, version, err := client.ServerAtLeast(minServerSideFilterVersion)
+	if err != nil || ok {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "⚠️  This server (v%s) filters zones only from v%s onwards, so --name/--type are applied locally to the requested page.\n", version, minServerSideFilterVersion)
+	fmt.Fprintln(os.Stderr, "Matching zones on other pages are not shown, and the page totals count unfiltered zones. Drop --page/--per-page to filter across all zones.")
+}
+
 // filterZones applies filterName/filterType to zones client-side. Servers
 // v15.3+ already filter, making this a no-op; older servers ignore the
 // parameters and return everything, so this keeps the flags working there.
@@ -201,7 +220,11 @@ var listCmd = &cobra.Command{
 Zones can be filtered by name (--name, supporting * and ? wildcards) and by
 type (--type). Servers v15.3+ filter server-side; on older servers the same
 filter is applied client-side, so the flags work either way. Results can be
-paginated with --page and --per-page.`,
+paginated with --page and --per-page.
+
+Combining a filter with pagination needs a v15.3+ server to be accurate, since
+filtering an older server's results locally can only consider the page that was
+returned. The command warns when it detects that combination.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		filterType := ""
 		if listFilterType != "" {
@@ -213,8 +236,18 @@ paginated with --page and --per-page.`,
 			filterType = ct
 		}
 
+		client := api.New()
+
+		// Filtering a paginated list needs server-side filtering to be correct;
+		// only pay for the version lookup when both are actually in play.
+		filtering := listFilterName != "" || filterType != ""
+		paginating := listPage > 0 || listPerPage > 0
+		if filtering && paginating {
+			warnIfPaginatedFilterUnsupported(client)
+		}
+
 		q := buildZonesListQuery(listFilterName, filterType, listPage, listPerPage)
-		result, response, err := api.New().GetJSON("/api/zones/list", q)
+		result, response, err := client.GetJSON("/api/zones/list", q)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 			os.Exit(1)
@@ -226,8 +259,7 @@ paginated with --page and --per-page.`,
 			return
 		}
 
-		showFooter := listPage > 0 || listPerPage > 0
-		fmt.Print(formatZonesList(response, listFilterName, filterType, showFooter))
+		fmt.Print(formatZonesList(response, listFilterName, filterType, paginating))
 	},
 }
 
