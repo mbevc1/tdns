@@ -6,7 +6,6 @@
 ### Bug Fixes
 
 * **list:** warn when filtering paginated results needs a newer server ([03c6485](https://github.com/mbevc1/tdns/commit/03c648559c8a4c22e40cdeb2c53c9fba280aec0d))
-* **list:** warn when filtering paginated results needs a newer server ([18cf668](https://github.com/mbevc1/tdns/commit/18cf66800ab0f45691b20cd89e91c1a8a17344ac))
 
 ## [0.8.0](https://github.com/mbevc1/tdns/compare/v0.7.1...v0.8.0) (2026-08-19)
 
