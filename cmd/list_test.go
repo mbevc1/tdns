@@ -163,15 +163,40 @@ func TestFormatZonesListFull(t *testing.T) {
 	}
 }
 
-// runListCmd executes `tdns list <args>` against a stub server and returns
-// the query values the server received.
+// listRequest records what the stub server received for one API call.
+type listRequest struct {
+	path  string
+	query map[string][]string
+}
+
+// runListCmd executes `tdns list <args>` against a stub server reporting a
+// v15.3+ version, and returns the query values of the zones/list call.
 func runListCmd(t *testing.T, args ...string) map[string][]string {
 	t.Helper()
+	for _, r := range runListCmdRequests(t, "15.3", args...) {
+		if r.path == "/api/zones/list" {
+			return r.query
+		}
+	}
+	t.Fatal("no request to /api/zones/list")
+	return nil
+}
 
-	var gotQuery map[string][]string
+// runListCmdRequests executes `tdns list <args>` against a stub server that
+// reports serverVersion, and returns every request it received in order. An
+// empty serverVersion omits the field, standing in for a server whose version
+// cannot be read.
+func runListCmdRequests(t *testing.T, serverVersion string, args ...string) []listRequest {
+	t.Helper()
+
+	var got []listRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotQuery = r.URL.Query()
+		got = append(got, listRequest{path: r.URL.Path, query: r.URL.Query()})
 		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/api/settings/get") {
+			fmt.Fprintf(w, `{"status":"ok","response":{"version":%q}}`, serverVersion)
+			return
+		}
 		fmt.Fprint(w, `{"status":"ok","response":{"zones":[]}}`)
 	}))
 	defer srv.Close()
@@ -201,7 +226,67 @@ func runListCmd(t *testing.T, args ...string) map[string][]string {
 	}
 	wp.Close()
 
-	return gotQuery
+	return got
+}
+
+// paths returns the request paths in the order they were received.
+func paths(reqs []listRequest) []string {
+	out := make([]string, 0, len(reqs))
+	for _, r := range reqs {
+		out = append(out, r.path)
+	}
+	return out
+}
+
+func TestListCmdChecksVersionOnlyWhenFilteringPaginatedResults(t *testing.T) {
+	// The version lookup is an extra round-trip, so it must not happen unless a
+	// filter and pagination are combined.
+	for _, tt := range []struct {
+		name string
+		args []string
+	}{
+		{"plain list", nil},
+		{"filter only", []string{"--name", "ex*"}},
+		{"type filter only", []string{"--type", "Primary"}},
+		{"pagination only", []string{"--page", "2"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := paths(runListCmdRequests(t, "15.3", tt.args...))
+			if len(got) != 1 || got[0] != "/api/zones/list" {
+				t.Errorf("requests = %v, want only /api/zones/list", got)
+			}
+		})
+	}
+
+	for _, args := range [][]string{
+		{"--name", "ex*", "--page", "2"},
+		{"--type", "Primary", "--per-page", "5"},
+	} {
+		got := paths(runListCmdRequests(t, "15.3", args...))
+		want := []string{"/api/settings/get", "/api/zones/list"}
+		if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+			t.Errorf("`list %v` requests = %v, want %v", args, got, want)
+		}
+	}
+}
+
+func TestListCmdWarnsWhenServerCannotFilterPaginatedResults(t *testing.T) {
+	// The listing itself must still be requested and rendered; the warning is
+	// advisory, not a refusal.
+	for _, version := range []string{"15.2", "14.0", ""} {
+		reqs := runListCmdRequests(t, version, "--name", "ex*", "--page", "2")
+		if got := paths(reqs); len(got) == 0 || got[len(got)-1] != "/api/zones/list" {
+			t.Errorf("server v%q: requests = %v, want the listing to still run", version, got)
+		}
+		for _, r := range reqs {
+			if r.path != "/api/zones/list" {
+				continue
+			}
+			if got := r.query["filterName"]; len(got) != 1 || got[0] != "ex*" {
+				t.Errorf("server v%q: filterName = %v, want it sent anyway", version, got)
+			}
+		}
+	}
 }
 
 func TestListCmdSendsNoParamsByDefault(t *testing.T) {

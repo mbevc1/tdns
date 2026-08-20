@@ -57,6 +57,14 @@ tdns create <zone>... [--type Primary]
 tdns delete <zone>...
 ```
 
+> [!NOTE]
+`tdns list --name`/`--type` work against any server: v15.3+ filter server-side,
+and on older servers the same filter is applied locally. Combining a filter with
+`--page`/`--per-page` needs v15.3+ to be accurate though, because filtering an
+older server's response locally can only consider the page it returned — matches
+on other pages aren't shown, and the page totals count unfiltered zones. `tdns`
+warns when it sees that combination on an older server.
+
 #### Importing zones
 
 `tdns import` posts an RFC 1035 (BIND style) zone file to an existing Primary or
