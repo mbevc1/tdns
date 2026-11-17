@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/mbevc1/tdns/compare/v0.8.2...v0.8.3) (2026-11-17)
+
+
+### Miscellaneous Chores
+
+* release 0.8.3 ([3063d6d](https://github.com/mbevc1/tdns/commit/3063d6db5a991507193088424ce5a7e50b1cb3b6))
+
 ## [0.8.2](https://github.com/mbevc1/tdns/compare/v0.8.1...v0.8.2) (2026-09-15)
 
 
